@@ -26,7 +26,7 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': 'off',
     'object-curly-spacing': 'off',
     'require-jsdoc': 'off',
-    indent: 'off',
+    'indent': 'off',
     'new-cap': 'off',
     'max-len': 'off',
     'prettier/prettier': [

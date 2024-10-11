@@ -3,12 +3,12 @@ import Joi from 'joi';
 
 export const validationSchema = Joi.object({
   // ENV
-  RUNTIME: Joi.string().valid('local', 'test', 'prod').required(),
-  PORT: Joi.number().required(),
-  SERVICE_NAME: Joi.string().required(),
+  SERVER_RUNTIME: Joi.string().valid('local', 'test', 'prod').required(),
+  SERVER_PORT: Joi.number().required(),
+  SERVER_SERVICE_NAME: Joi.string().required(),
 
   // BACKEND
-  BASE_URL: Joi.string().required(),
+  SERVER_BASE_URL: Joi.string().required(),
 
   // SWAGGER
   SWAGGER_ID: Joi.string().required(),
@@ -19,10 +19,16 @@ export const validationSchema = Joi.object({
   ACCESS_TOKEN_EXPIRY: Joi.string().required(),
   REFRESH_TOKEN_EXPIRY: Joi.string().required(),
 
-  // DB
+  // DB (PostgreSQL)
   DB_HOST: Joi.string().required(),
   DB_PORT: Joi.number().required(),
-  DB_USERNAME: Joi.string().required(),
-  DB_PASSWORD: Joi.string().required(),
-  DB_DATABASE: Joi.string().required(),
+  DB_ID: Joi.string().required(),
+  DB_PW: Joi.string().required(),
+  DB_NAME: Joi.string().required(),
+
+  // database (Redis)
+  REDIS_ID: Joi.string().required(),
+  REDIS_PW: Joi.string().required(),
+  REDIS_HOST: Joi.string().required(),
+  REDIS_PORT: Joi.number().required(),
 });

@@ -14,7 +14,7 @@ export const swaggerAuthMiddleware = (id: string, pw: string) =>
 
 export function setSwagger(app: INestApplication): void {
   const configService = app.get(ConfigService);
-  const serviceName = configService.get<number>('SERVICE_NAME');
+  const serviceName = configService.get<number>('SERVER_SERVICE_NAME');
   const swaggerId = configService.get<string>('SWAGGER_ID');
   const swaggerPw = configService.get<string>('SWAGGER_PW');
   const config = new DocumentBuilder()

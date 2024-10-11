@@ -14,10 +14,12 @@ async function bootstrap() {
   app.useGlobalFilters(new BusinessExceptionFilter());
 
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT');
-  const env = configService.get<string>('RUNTIME');
-  const serviceName = configService.get<string>('SERVICE_NAME');
-  console.log(`runtime: ${env}\tport: ${port}\tserviceName: ${serviceName}`);
+  const port = configService.get<number>('SERVER_PORT');
+  const env = configService.get<string>('SERVER_RUNTIME');
+  const serviceName = configService.get<string>('SERVER_SERVICE_NAME');
+  console.log(
+    `SERVER_RUNTIME: ${env}\tport: ${port}\tserviceName: ${serviceName}`,
+  );
 
   setSwagger(app);
   app.enableCors(corsOption(env));

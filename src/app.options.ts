@@ -9,8 +9,8 @@ import { NestApplicationOptions } from '@nestjs/common';
 
 export function getNestOptions(): NestApplicationOptions {
   const configService = new ConfigService();
-  const env = configService.get<string>('RUNTIME');
-  const serviceName = configService.get<string>('SERVICE_NAME');
+  const env = configService.get<string>('SERVER_RUNTIME');
+  const serviceName = configService.get<string>('SERVER_SERVICE_NAME');
 
   return {
     abortOnError: true,

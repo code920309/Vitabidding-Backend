@@ -1,5 +1,5 @@
 // src/config/validation.schema.ts
-import * as Joi from '@hapi/joi';
+import Joi from 'joi';
 
 export const validationSchema = Joi.object({
   // ENV

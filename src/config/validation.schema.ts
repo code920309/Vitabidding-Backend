@@ -22,13 +22,13 @@ export const validationSchema = Joi.object({
   // DB (PostgreSQL)
   DB_HOST: Joi.string().required(),
   DB_PORT: Joi.number().required(),
+  DB_NAME: Joi.string().required(),
   DB_ID: Joi.string().required(),
   DB_PW: Joi.string().required(),
-  DB_NAME: Joi.string().required(),
 
   // database (Redis)
-  REDIS_ID: Joi.string().required(),
-  REDIS_PW: Joi.string().required(),
   REDIS_HOST: Joi.string().required(),
   REDIS_PORT: Joi.number().required(),
+  REDIS_ID: Joi.string().required(),
+  REDIS_PW: Joi.string().required(),
 });

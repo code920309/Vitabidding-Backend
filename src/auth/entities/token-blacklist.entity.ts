@@ -10,7 +10,7 @@ export class TokenBlacklist extends BaseEntity {
   @Column()
   jti: string;
 
-  @Column()
+  @Column({ type: 'enum', enum: ['access', 'refresh'] })
   tokenType: 'access' | 'refresh';
 
   @Column({ type: 'timestamp' })

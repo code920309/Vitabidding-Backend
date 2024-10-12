@@ -1,11 +1,16 @@
 // src/auth/auth.module.ts
 import { Module } from '@nestjs/common';
 import {
+  User,
+  SecuritySetting,
   AccessLog,
   AccessToken,
   RefreshToken,
   TokenBlacklist,
-  User,
+  Address,
+  AgreementVerify,
+  ChangeBusiness,
+  ObsStudio,
 } from './entities';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
@@ -40,10 +45,15 @@ import { JwtStrategy } from './strategies';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     TypeOrmModule.forFeature([
       User,
+      SecuritySetting,
+      AccessLog,
       AccessToken,
       RefreshToken,
-      AccessLog,
       TokenBlacklist,
+      Address,
+      AgreementVerify,
+      ChangeBusiness,
+      ObsStudio,
     ]),
   ],
   controllers: [AuthController],

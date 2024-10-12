@@ -13,6 +13,9 @@ export class User extends BaseEntity {
   name: string;
 
   @Column({ type: 'varchar' })
+  realName: string;
+
+  @Column({ type: 'varchar' })
   email: string;
 
   @Column({ type: 'varchar' })
@@ -20,6 +23,12 @@ export class User extends BaseEntity {
 
   @Column({ type: 'varchar', length: 50 })
   phone: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  provider: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  providerId: string;
 
   @Column({ type: 'varchar', length: 50 })
   role: UserRole;

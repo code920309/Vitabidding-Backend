@@ -9,7 +9,3 @@ export * from './address.entity';
 export * from './agreement-verify.entity';
 export * from './changebusiness.entity';
 export * from './obs-studio.entity';
-// export * from '../../product/entities/auction.entity';
-// export * from '../../product/entities/bid.entity';
-// export * from '../../product/entities/product-images.entity';
-// export * from '../../product/entities/product.entity';

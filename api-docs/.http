@@ -8,9 +8,10 @@ POST {{domain}}/auth/signup
 Content-Type: application/json
 
 {
-  "name": "pachyuchepe",
-  "email": "user5@gmail.com",
-  "password": "12345",
-	"phone": "010-1234-5678",
-	"role": "admin"
+  "name": "김코딩1",
+  "realName": "배고파용1",
+  "email": "coding1233@gmail.com",
+  "password": "1234",
+  "phone": "123-456-7890",
+  "role": "user"
 }

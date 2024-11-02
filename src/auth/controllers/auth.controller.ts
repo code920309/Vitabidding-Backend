@@ -41,6 +41,7 @@ export class AuthController {
     return {
       id: user.id,
       name: user.name,
+      realName: user.realName,
       email: user.email,
       phone: user.phone,
     };

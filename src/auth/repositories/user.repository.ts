@@ -17,16 +17,19 @@ export class UserRepository extends Repository<User> {
   }
 
   async findOneByEmail(email: string): Promise<User> {
+    console.log('Finding user by email:', email);
     return this.repo.findOneBy({ email });
   }
 
   async createUser(dto: CreateUserDto, hashedPassword: string): Promise<User> {
     const user = new User();
     user.name = dto.name;
+    user.realName = dto.realName || '';
     user.email = dto.email;
     user.password = hashedPassword;
     user.phone = dto.phone;
     user.role = dto.role;
+    user.provider = 'local';
     return this.repo.save(user);
   }
 }

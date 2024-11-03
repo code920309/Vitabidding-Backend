@@ -46,11 +46,12 @@ export const corsOption = (env: string) => {
       }
     },
     methods: ['POST', 'PUT', 'DELETE', 'GET', 'PATCH'],
+    credentials: true,
   };
 };
 
 const allowed = {
-  test: ['http://localhost:3000', 'https://localhost:3000'],
+  test: [],
   prod: [],
 };
 
@@ -61,7 +62,10 @@ const checkLocalWhiteList = (env, origin) => {
     (env === 'local' || env === 'test') &&
     (origin.includes('http://127.0.0.1') ||
       origin.includes('http://0.0.0.0') ||
-      origin.includes('http://localhost'))
+      origin.includes('http://localhost') ||
+      origin.includes('https://127.0.0.1') ||
+      origin.includes('https://0.0.0.0') ||
+      origin.includes('https://localhost'))
   );
 };
 

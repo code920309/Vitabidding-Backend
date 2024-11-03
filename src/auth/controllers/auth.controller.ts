@@ -15,6 +15,8 @@ import {
   LoginResDto,
   RefreshReqDto,
   SignupResDto,
+  Signup2Dto,
+  Signup2WithUserIdDto,
 } from '../dto';
 
 import { Response, Request } from 'express'; // Request 추가
@@ -25,6 +27,73 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly userService: UserService,
   ) {}
+
+  @Post('signup1')
+  async signup1(
+    @Body() createUserDto: CreateUserDto,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    const user = await this.userService.createUser(createUserDto);
+
+    const loginResult = await this.authService.login(
+      user.email,
+      createUserDto.password,
+      {
+        ip: req.ip,
+        ua: req.headers['user-agent'] || '',
+        endpoint: `${req.method} ${req.originalUrl}`,
+      },
+    );
+
+    const response: SignupResDto = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    };
+
+    res.json({
+      message: 'Signup1 successful',
+      accessToken: loginResult.accessToken,
+      user: response,
+    });
+  }
+
+  @Post('signup2')
+  async signup2(
+    @Req() req: Request,
+    @Body() signup2Dto: Signup2Dto,
+  ): Promise<{ message: string; user: SignupResDto }> {
+    const accessToken = req.headers['authorization']?.split(' ')[1];
+    if (!accessToken) {
+      throw new HttpException(
+        { message: 'Access token is required' },
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const userId = await this.authService.getUserIdFromToken(accessToken);
+
+    // Signup2WithUserIdDto 타입으로 전달
+    await this.userService.updateAdditionalUserInfo({
+      ...signup2Dto,
+      userId,
+    } as Signup2WithUserIdDto);
+
+    const user = await this.userService.findUserById(userId);
+
+    const response: SignupResDto = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      realName: user.realName,
+      phone: user.phone,
+    };
+
+    return { message: 'Signup2 successful', user: response };
+  }
 
   @Post('login')
   async login(
@@ -62,34 +131,6 @@ export class AuthController {
     await this.authService.logout(accessToken);
 
     return { message: 'Logout successful' };
-  }
-
-  @Post('signup')
-  async signup(
-    @Body() createUserDto: CreateUserDto,
-    @Req() req: Request, // Request 객체 추가
-    @Res() res: Response,
-  ): Promise<void> {
-    // 회원가입 처리
-    const user = await this.userService.createUser(createUserDto);
-
-    // 회원가입 후 자동 로그인 처리
-    const loginResult = await this.authService.login(
-      createUserDto.email,
-      createUserDto.password,
-      {
-        ip: req.ip,
-        ua: req.headers['user-agent'] || '',
-        endpoint: `${req.method} ${req.originalUrl}`,
-      },
-    );
-
-    // 로그인 결과와 사용자 정보, 토큰을 응답으로 반환
-    res.json({
-      message: 'Signup successful',
-      accessToken: loginResult.accessToken,
-      user: loginResult.user,
-    });
   }
 
   @Post('refresh')

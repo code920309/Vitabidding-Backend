@@ -4,6 +4,8 @@ import { BaseEntity } from '../../common/entity';
 import { RefreshToken } from './refresh-token.entity';
 import { AccessToken } from './access-token.entity';
 import { AccessLog } from './access-log.entity';
+import { Address } from './address.entity';
+import { AgreementVerify } from './agreement-verify.entity';
 
 export type UserRole = 'admin' | 'user';
 
@@ -12,7 +14,7 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar' })
   name: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', nullable: true })
   realName: string;
 
   @Column({ type: 'varchar' })
@@ -21,7 +23,7 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar' })
   password: string;
 
-  @Column({ type: 'varchar', length: 50 })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   phone: string;
 
   @Column({ type: 'varchar', nullable: true })
@@ -47,4 +49,10 @@ export class User extends BaseEntity {
 
   @OneToMany(() => AccessLog, (log) => log.user)
   accessLogs: Relation<AccessLog[]>;
+
+  @OneToMany(() => Address, (address) => address.user)
+  addresses: Relation<Address[]>;
+
+  @OneToMany(() => AgreementVerify, (agreement) => agreement.user)
+  agreements: Relation<AgreementVerify[]>;
 }

@@ -5,16 +5,35 @@
 ###
 # 사용자 회원가입 (로그인도 같이 진행)
 # @name loginToken
-POST {{domain}}/auth/signup
+POST {{domain}}/auth/signup1
 Content-Type: application/json
 
 {
   "name": "배고파용",
-  "realName": "김코딩",
   "email": "user1@gmail.com",
   "password": "1234",
-  "phone": "123-456-7890",
   "role": "user"
+}
+
+###
+# 사용자 추가 정보 입력
+POST {{domain}}/auth/signup2
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "realName": "김코딩",
+  "phone": "123-456-7890",
+  "address": {
+    "zipCode": "12345",
+    "streetAddress1": "서울특별시 강남구 테헤란로",
+    "streetAddress2": "1004",
+    "state": "서울"
+  },
+  "agreement": {
+    "usagePolicyV": true,
+    "personalInformationV": true
+  }
 }
 
 ###

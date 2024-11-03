@@ -19,6 +19,8 @@ import {
   RefreshTokenRepository,
   TokenBlacklistRepository,
   UserRepository,
+  AddressRepository,
+  AgreementVerifyRepository,
 } from './repositories';
 import { AuthService, TokenBlacklistService, UserService } from './services';
 import { AuthController } from './controllers';
@@ -67,6 +69,8 @@ import { JwtStrategy } from './strategies';
     RefreshTokenRepository,
     AccessLogRepository,
     TokenBlacklistRepository,
+    AddressRepository,
+    AgreementVerifyRepository,
 
     JwtStrategy,
   ],
@@ -80,6 +84,8 @@ import { JwtStrategy } from './strategies';
     RefreshTokenRepository,
     AccessLogRepository,
     TokenBlacklistRepository,
+    AddressRepository,
+    AgreementVerifyRepository,
 
     JwtStrategy,
   ],

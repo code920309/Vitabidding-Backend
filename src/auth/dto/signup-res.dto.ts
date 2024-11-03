@@ -4,7 +4,8 @@
 export type SignupResDto = {
   id: string;
   name: string;
-  realName: string;
   email: string;
-  phone: string;
+  role: string;
+  realName?: string; // 선택적 필드로 설정
+  phone?: string; // 선택적 필드로 설정
 };

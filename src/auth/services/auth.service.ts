@@ -1,5 +1,5 @@
 // src/auth/services/auth.service.ts
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import {
   AccessLogRepository,
@@ -290,5 +290,15 @@ export class AuthService {
     }
 
     return new Date(Date.now() + expiresInMilliseconds);
+  }
+
+  async getUserIdFromToken(token: string): Promise<string> {
+    try {
+      const decoded = this.jwtService.verify(token);
+      console.log('뜨냐?', decoded);
+      return decoded.sub;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid access token');
+    }
   }
 }

@@ -16,20 +16,24 @@ export class UserRepository extends Repository<User> {
     super(repo.target, repo.manager, repo.queryRunner);
   }
 
-  async findOneByEmail(email: string): Promise<User> {
-    console.log('Finding user by email:', email);
-    return this.repo.findOneBy({ email });
+  async findOneByEmail(email: string): Promise<User | undefined> {
+    return this.repo.findOne({ where: { email } });
+  }
+
+  async findOneById(id: string): Promise<User | undefined> {
+    return this.repo.findOne({ where: { id } });
   }
 
   async createUser(dto: CreateUserDto, hashedPassword: string): Promise<User> {
-    const user = new User();
-    user.name = dto.name;
-    user.realName = dto.realName || '';
-    user.email = dto.email;
-    user.password = hashedPassword;
-    user.phone = dto.phone;
-    user.role = dto.role;
-    user.provider = 'local';
+    const user = this.repo.create({
+      name: dto.name,
+      // realName: dto.realName || '',
+      email: dto.email,
+      password: hashedPassword,
+      // phone: dto.phone,
+      role: dto.role,
+      provider: 'local',
+    });
     return this.repo.save(user);
   }
 }

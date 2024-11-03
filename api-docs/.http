@@ -3,15 +3,32 @@
 @refreshToken = {{loginToken.response.body.$.refreshToken}}
 
 ###
-# 사용자 회원가입
+# 사용자 회원가입 (로그인도 같이 진행)
 POST {{domain}}/auth/signup
 Content-Type: application/json
 
 {
-  "name": "김코딩1",
-  "realName": "배고파용1",
-  "email": "coding1233@gmail.com",
+  "name": "배고파용",
+  "realName": "김코딩",
+  "email": "user@gmail.com",
   "password": "1234",
   "phone": "123-456-7890",
   "role": "user"
 }
+
+###
+# 사용자 로그인
+# @name loginToken
+POST {{domain}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@gmail.com",
+  "password": "1234"
+}
+
+### 
+# 로그아웃
+POST {{domain}}/auth/logout
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}

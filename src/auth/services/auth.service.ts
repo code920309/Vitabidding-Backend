@@ -79,56 +79,89 @@ export class AuthService {
     };
   }
 
-  async logout(accessToken: string): Promise<void> {
-    // accessToken의 JTI를 추출해 사용자 식별
-    const { sub: userId, jti: jtiAccess } = await this.jwtService.verifyAsync(
-      accessToken,
-      {
-        secret: this.configService.get<string>('JWT_SECRET'),
-      },
-    );
-
-    // DB에서 해당 사용자의 refreshToken 조회
-    const refreshTokenEntity = await this.refreshTokenRepository.findOne({
-      where: { user: { id: userId }, isRevoked: false },
-    });
-
-    if (!refreshTokenEntity) {
-      throw new BusinessException(
-        'auth',
-        'no-active-refresh-token',
-        'No active refresh token found for this user',
-        HttpStatus.UNAUTHORIZED,
+  async logout(accessToken: string): Promise<{ message: string }> {
+    try {
+      // accessToken에서 사용자 ID와 jti 추출
+      const { sub: userId, jti: jtiAccess } = await this.jwtService.verifyAsync(
+        accessToken,
+        {
+          secret: this.configService.get<string>('JWT_SECRET'),
+        },
       );
-    }
 
-    // refreshToken의 JTI 추출
-    const { jti: jtiRefresh } = await this.jwtService.verifyAsync(
-      refreshTokenEntity.token,
-      {
-        secret: this.configService.get<string>('JWT_SECRET'),
-      },
-    );
+      // 블랙리스트 확인 후 이미 블랙리스트에 있으면 `401 Unauthorized` 반환
+      const isBlacklisted =
+        await this.tokenBlacklistService.isTokenBlacklisted(jtiAccess);
+      if (isBlacklisted) {
+        console.log(
+          `Token ${jtiAccess} is already blacklisted. Returning 401 Unauthorized.`,
+        );
+        throw new BusinessException(
+          'auth',
+          'token-revoked',
+          'This token has been revoked',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
 
-    // accessToken과 refreshToken 모두 블랙리스트에 추가
-    await Promise.all([
-      this.addToBlacklist(
+      // 블랙리스트에 추가하고 활성화된 모든 토큰을 무효화
+      await this.addToBlacklist(
         accessToken,
         jtiAccess,
         'access',
         'ACCESS_TOKEN_EXPIRY',
-      ),
-      this.addToBlacklist(
-        refreshTokenEntity.token,
-        jtiRefresh,
-        'refresh',
-        'REFRESH_TOKEN_EXPIRY',
-      ),
-    ]);
+      );
 
-    // refreshToken을 비활성화
-    refreshTokenEntity.isRevoked = true;
-    await this.refreshTokenRepository.save(refreshTokenEntity);
+      const activeAccessTokens = await this.accessTokenRepository.find({
+        where: { user: { id: userId }, isRevoked: false },
+      });
+      const activeRefreshTokens = await this.refreshTokenRepository.find({
+        where: { user: { id: userId }, isRevoked: false },
+      });
+
+      // 모든 액세스 및 리프레시 토큰을 블랙리스트에 추가하고 무효화
+      await Promise.all([
+        ...activeAccessTokens.map(async (token) => {
+          const { jti } = await this.jwtService.verifyAsync(token.token, {
+            secret: this.configService.get<string>('JWT_SECRET'),
+          });
+          await this.addToBlacklist(
+            token.token,
+            jti,
+            'access',
+            'ACCESS_TOKEN_EXPIRY',
+          );
+          token.isRevoked = true;
+        }),
+        ...activeRefreshTokens.map(async (token) => {
+          const { jti } = await this.jwtService.verifyAsync(token.token, {
+            secret: this.configService.get<string>('JWT_SECRET'),
+          });
+          await this.addToBlacklist(
+            token.token,
+            jti,
+            'refresh',
+            'REFRESH_TOKEN_EXPIRY',
+          );
+          token.isRevoked = true;
+        }),
+      ]);
+
+      // 데이터베이스에 토큰 상태 저장
+      await this.accessTokenRepository.save(activeAccessTokens);
+      await this.refreshTokenRepository.save(activeRefreshTokens);
+
+      console.log(`All tokens for user ${userId} have been revoked.`);
+      return { message: 'Logout successful for all active sessions' };
+    } catch (error) {
+      console.error('Error during logout:', error);
+      throw new BusinessException(
+        'auth',
+        'logout-failed',
+        'Failed to logout user',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async refreshAccessToken(refreshToken: string): Promise<string> {

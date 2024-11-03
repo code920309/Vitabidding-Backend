@@ -4,13 +4,14 @@
 
 ###
 # 사용자 회원가입 (로그인도 같이 진행)
+# @name loginToken
 POST {{domain}}/auth/signup
 Content-Type: application/json
 
 {
   "name": "배고파용",
   "realName": "김코딩",
-  "email": "user@gmail.com",
+  "email": "user1@gmail.com",
   "password": "1234",
   "phone": "123-456-7890",
   "role": "user"

@@ -1,5 +1,13 @@
 // src/auth/controllers/auth.controller.ts
-import { Body, Controller, Post, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Req,
+  Res,
+  HttpStatus,
+  HttpException,
+} from '@nestjs/common';
 import { AuthService, UserService } from '../services';
 import {
   CreateUserDto,
@@ -40,6 +48,22 @@ export class AuthController {
     res.json(loginResult); // 로그인 결과를 JSON 응답으로 반환
   }
 
+  @Post('logout')
+  async logout(@Req() req: Request): Promise<{ message: string }> {
+    const accessToken = req.headers['authorization']?.split(' ')[1]; // accessToken 추출
+
+    if (!accessToken) {
+      throw new HttpException(
+        { message: 'Access token is required' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.authService.logout(accessToken);
+
+    return { message: 'Logout successful' };
+  }
+
   @Post('signup')
   async signup(
     @Body() createUserDto: CreateUserDto,
@@ -64,7 +88,6 @@ export class AuthController {
     res.json({
       message: 'Signup successful',
       accessToken: loginResult.accessToken,
-      refreshToken: loginResult.refreshToken,
       user: loginResult.user,
     });
   }

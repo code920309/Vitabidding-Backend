@@ -79,15 +79,38 @@ export class AuthService {
     };
   }
 
-  async logout(accessToken: string, refreshToken: string): Promise<void> {
-    const [jtiAccess, jtiRefresh] = await Promise.all([
-      this.jwtService.verifyAsync(accessToken, {
+  async logout(accessToken: string): Promise<void> {
+    // accessToken의 JTI를 추출해 사용자 식별
+    const { sub: userId, jti: jtiAccess } = await this.jwtService.verifyAsync(
+      accessToken,
+      {
         secret: this.configService.get<string>('JWT_SECRET'),
-      }),
-      this.jwtService.verifyAsync(refreshToken, {
+      },
+    );
+
+    // DB에서 해당 사용자의 refreshToken 조회
+    const refreshTokenEntity = await this.refreshTokenRepository.findOne({
+      where: { user: { id: userId }, isRevoked: false },
+    });
+
+    if (!refreshTokenEntity) {
+      throw new BusinessException(
+        'auth',
+        'no-active-refresh-token',
+        'No active refresh token found for this user',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    // refreshToken의 JTI 추출
+    const { jti: jtiRefresh } = await this.jwtService.verifyAsync(
+      refreshTokenEntity.token,
+      {
         secret: this.configService.get<string>('JWT_SECRET'),
-      }),
-    ]);
+      },
+    );
+
+    // accessToken과 refreshToken 모두 블랙리스트에 추가
     await Promise.all([
       this.addToBlacklist(
         accessToken,
@@ -96,12 +119,16 @@ export class AuthService {
         'ACCESS_TOKEN_EXPIRY',
       ),
       this.addToBlacklist(
-        refreshToken,
+        refreshTokenEntity.token,
         jtiRefresh,
         'refresh',
         'REFRESH_TOKEN_EXPIRY',
       ),
     ]);
+
+    // refreshToken을 비활성화
+    refreshTokenEntity.isRevoked = true;
+    await this.refreshTokenRepository.save(refreshTokenEntity);
   }
 
   async refreshAccessToken(refreshToken: string): Promise<string> {

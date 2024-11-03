@@ -50,7 +50,7 @@ export const corsOption = (env: string) => {
 };
 
 const allowed = {
-  test: [''],
+  test: ['http://localhost:3000', 'https://localhost:3000'],
   prod: [],
 };
 

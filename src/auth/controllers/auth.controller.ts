@@ -137,4 +137,23 @@ export class AuthController {
   async refresh(@Body() dto: RefreshReqDto): Promise<string> {
     return this.authService.refreshAccessToken(dto.refreshToken);
   }
+
+  @Post('send-code')
+  async sendVerificationCode(@Body('email') email: string) {
+    await this.authService.sendVerificationCode(email);
+    return { message: 'Verification code sent' };
+  }
+
+  @Post('verify-code')
+  async verifyCode(@Body('email') email: string, @Body('code') code: string) {
+    const isValid = await this.authService.verifyCode(email, code);
+
+    if (!isValid) {
+      throw new HttpException(
+        'Invalid verification code',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    return { message: 'Email verified successfully' };
+  }
 }

@@ -23,6 +23,7 @@ import {
   AgreementVerifyRepository,
 } from './repositories';
 import { AuthService, TokenBlacklistService, UserService } from './services';
+import { MailService } from '../mail/mail.service';
 import { AuthController } from './controllers';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -63,6 +64,7 @@ import { JwtStrategy } from './strategies';
     UserService,
     AuthService,
     TokenBlacklistService,
+    MailService,
 
     UserRepository,
     AccessTokenRepository,
@@ -78,6 +80,7 @@ import { JwtStrategy } from './strategies';
     UserService,
     AuthService,
     TokenBlacklistService,
+    MailService,
 
     UserRepository,
     AccessTokenRepository,

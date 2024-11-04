@@ -14,6 +14,9 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { LoginResDto } from '../dto';
 import { TokenBlacklistService } from './token-blacklist.service';
+import { RedisService } from '../../redis/redis.service';
+import { MailService } from '../../mail/mail.service';
+import * as disposableDomains from 'disposable-email-domains';
 import { RequestInfo, TokenPayload } from '../types';
 
 @Injectable()
@@ -26,6 +29,8 @@ export class AuthService {
     private readonly accessTokenRepository: AccessTokenRepository,
     private readonly accessLogRepository: AccessLogRepository,
     private readonly tokenBlacklistService: TokenBlacklistService,
+    private readonly redisService: RedisService,
+    private readonly mailService: MailService,
   ) {}
 
   async login(
@@ -300,5 +305,29 @@ export class AuthService {
     } catch (error) {
       throw new UnauthorizedException('Invalid access token');
     }
+  }
+
+  private isDisposableEmail(email: string): boolean {
+    const domain = email.split('@')[1];
+    const disposableDomainList = Object.values(disposableDomains) as string[]; // 배열로 변환
+    return disposableDomainList.includes(domain);
+  }
+
+  async sendVerificationCode(email: string): Promise<void> {
+    if (this.isDisposableEmail(email)) {
+      throw new Error('Disposable email addresses are not allowed.');
+    }
+
+    const verificationCode = Math.floor(
+      100000 + Math.random() * 900000,
+    ).toString();
+
+    await this.redisService.set(`verification:${email}`, verificationCode, 300); // 5분간 유효
+    await this.mailService.sendVerificationEmail(email, verificationCode);
+  }
+
+  async verifyCode(email: string, code: string): Promise<boolean> {
+    const storedCode = await this.redisService.get(`verification:${email}`);
+    return storedCode === code;
   }
 }

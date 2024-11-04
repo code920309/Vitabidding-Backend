@@ -322,7 +322,7 @@ export class AuthService {
       100000 + Math.random() * 900000,
     ).toString();
 
-    await this.redisService.set(`verification:${email}`, verificationCode, 300); // 5분간 유효
+    await this.redisService.set(`verification:${email}`, verificationCode, 180); // 3분간 유효
     await this.mailService.sendVerificationEmail(email, verificationCode);
   }
 

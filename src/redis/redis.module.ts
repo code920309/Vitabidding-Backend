@@ -14,7 +14,7 @@ import { createClient } from 'redis';
       useFactory: async (configService: ConfigService) => {
         const client = createClient({
           url: `redis://${configService.get<string>('REDIS_HOST')}:${configService.get<number>('REDIS_PORT')}`,
-          password: configService.get<string>('REDIS_PASSWORD'),
+          password: configService.get<string>('REDIS_PW'),
         });
 
         client.on('error', (err) => console.error('Redis Client Error', err));

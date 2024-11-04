@@ -31,4 +31,8 @@ export const validationSchema = Joi.object({
   REDIS_PORT: Joi.number().required(),
   REDIS_ID: Joi.string().required(),
   REDIS_PW: Joi.string().required(),
+
+  // NodeMailer
+  NODE_MAILER_ID: Joi.string().required(),
+  NODE_MAILER_PW: Joi.string().required(),
 });

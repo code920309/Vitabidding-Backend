@@ -1,4 +1,9 @@
 // src/util/index.ts
+/**
+ * 지정된 길이의 랜덤 문자열을 생성
+ * @param length 생성할 문자열의 길이 (기본값: 20)
+ * @returns 랜덤하게 생성된 문자열
+ */
 export const generateRandomString = (length = 20): string => {
   const chars =
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -12,8 +17,10 @@ export const generateRandomString = (length = 20): string => {
 };
 
 /**
- * JSON을 Query String으로 변환한다.
- * Key와 Value 모두 URL에서 사용할 수 있도록 인코딩하되, null 또는 undefined인 값은 무시한다.
+ * 객체를 Query String으로 변환
+ * key와 value를 URL에서 사용할 수 있도록 인코딩, null 또는 undefined 값은 무시
+ * @param obj 변환할 객체
+ * @returns 변환된 Query String
  */
 export const objectToQueryString = (obj: Record<string, any>): string => {
   return Object.keys(obj)

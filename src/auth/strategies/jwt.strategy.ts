@@ -1,9 +1,15 @@
 // src/auth/strategies/jwt.strategy.ts
+
+// NestJS 관련 라이브러리 및 데코레이터
 import { Injectable, HttpStatus } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import { UserService, TokenBlacklistService } from '../services';
 import { ConfigService } from '@nestjs/config';
+
+// 외부 라이브러리
+import { ExtractJwt, Strategy } from 'passport-jwt';
+
+// 내부 모듈 및 서비스
+import { UserService, TokenBlacklistService } from '../services';
 import { TokenPayload } from '../types';
 import { User } from '../entities';
 import { BusinessException } from '../../exception';
@@ -22,10 +28,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
+  /**
+   * JWT 토큰을 검증하고 블랙리스트 여부 확인
+   * @param payload JWT 토큰의 페이로드
+   * @returns 유효한 사용자 엔티티
+   * @throws 토큰이 블랙리스트에 있거나 유효하지 않은 경우 예외 발생
+   */
   async validate(payload: TokenPayload): Promise<User> {
     const { sub, jti } = payload;
 
-    // 블랙리스트에 있는지 검사하고, 있다면 401 Unauthorized를 반환
+    // 토큰이 블랙리스트에 있는지 검사
     const isBlacklisted =
       await this.tokenBlacklistService.isTokenBlacklisted(jti);
     if (isBlacklisted) {

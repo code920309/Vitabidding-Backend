@@ -1,5 +1,8 @@
-// src/auth/dto/signup2.dto.ts
-export type Signup2Dto = {
+// src/auth/dto/create-user.dto.2.ts
+/**
+ * 회원가입 2단계에 필요한 추가 사용자 정보 전송 객체
+ */
+export type CreateUserDto2 = {
   realName: string;
   phone: string;
   address: {

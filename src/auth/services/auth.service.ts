@@ -1,23 +1,29 @@
-// src/auth/services/auth.service.ts
+// NestJS 관련 라이브러리 및 데코레이터
 import { HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+
+// 외부 라이브러리
 import * as argon2 from 'argon2';
+import { v4 as uuidv4 } from 'uuid';
+import * as disposableDomains from 'disposable-email-domains';
+
+// 내부 모듈 및 서비스
+import { BusinessException } from '../../exception';
 import {
   AccessLogRepository,
   AccessTokenRepository,
   RefreshTokenRepository,
   UserRepository,
 } from '../repositories';
-import { User } from '../entities';
-import { BusinessException } from '../../exception';
-import { v4 as uuidv4 } from 'uuid';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { LoginResDto } from '../dto';
 import { TokenBlacklistService } from './token-blacklist.service';
 import { RedisService } from '../../redis/redis.service';
 import { MailService } from '../../mail/mail.service';
-import * as disposableDomains from 'disposable-email-domains';
+
+// DTO 및 타입
+import { LoginResDto } from '../dto';
 import { RequestInfo, TokenPayload } from '../types';
+import { User } from '../entities';
 
 @Injectable()
 export class AuthService {
@@ -33,6 +39,13 @@ export class AuthService {
     private readonly mailService: MailService,
   ) {}
 
+  /**
+   * 로그인 처리
+   * @param email 사용자 이메일
+   * @param plainPassword 사용자 비밀번호 (일반 텍스트)
+   * @param req 요청 정보
+   * @returns 사용자 정보와 액세스 및 리프레시 토큰
+   */
   async login(
     email: string,
     plainPassword: string,
@@ -61,6 +74,12 @@ export class AuthService {
     };
   }
 
+  /**
+   * OAuth 로그인 처리
+   * @param user OAuth로 인증된 사용자 객체
+   * @param req 요청 정보
+   * @returns 사용자 정보와 액세스 및 리프레시 토큰
+   */
   async loginOauth(user: User, req: RequestInfo): Promise<LoginResDto> {
     const payload: TokenPayload = this.createTokenPayload(user.id);
 
@@ -84,9 +103,13 @@ export class AuthService {
     };
   }
 
+  /**
+   * 로그아웃 처리
+   * @param accessToken 액세스 토큰
+   * @returns 성공 메시지
+   */
   async logout(accessToken: string): Promise<{ message: string }> {
     try {
-      // accessToken에서 사용자 ID와 jti 추출
       const { sub: userId, jti: jtiAccess } = await this.jwtService.verifyAsync(
         accessToken,
         {
@@ -94,13 +117,9 @@ export class AuthService {
         },
       );
 
-      // 블랙리스트 확인 후 이미 블랙리스트에 있으면 `401 Unauthorized` 반환
       const isBlacklisted =
         await this.tokenBlacklistService.isTokenBlacklisted(jtiAccess);
       if (isBlacklisted) {
-        console.log(
-          `Token ${jtiAccess} is already blacklisted. Returning 401 Unauthorized.`,
-        );
         throw new BusinessException(
           'auth',
           'token-revoked',
@@ -109,7 +128,6 @@ export class AuthService {
         );
       }
 
-      // 블랙리스트에 추가하고 활성화된 모든 토큰을 무효화
       await this.addToBlacklist(
         accessToken,
         jtiAccess,
@@ -124,7 +142,6 @@ export class AuthService {
         where: { user: { id: userId }, isRevoked: false },
       });
 
-      // 모든 액세스 및 리프레시 토큰을 블랙리스트에 추가하고 무효화
       await Promise.all([
         ...activeAccessTokens.map(async (token) => {
           const { jti } = await this.jwtService.verifyAsync(token.token, {
@@ -152,14 +169,11 @@ export class AuthService {
         }),
       ]);
 
-      // 데이터베이스에 토큰 상태 저장
       await this.accessTokenRepository.save(activeAccessTokens);
       await this.refreshTokenRepository.save(activeRefreshTokens);
 
-      console.log(`All tokens for user ${userId} have been revoked.`);
       return { message: 'Logout successful for all active sessions' };
     } catch (error) {
-      console.error('Error during logout:', error);
       throw new BusinessException(
         'auth',
         'logout-failed',
@@ -169,6 +183,11 @@ export class AuthService {
     }
   }
 
+  /**
+   * 리프레시 토큰으로 새로운 액세스 토큰 발급
+   * @param refreshToken 리프레시 토큰
+   * @returns 새로 발급된 액세스 토큰
+   */
   async refreshAccessToken(refreshToken: string): Promise<string> {
     try {
       const { exp, ...payload } = await this.jwtService.verifyAsync(
@@ -199,7 +218,63 @@ export class AuthService {
     }
   }
 
-  createTokenPayload(userId: string): TokenPayload {
+  /**
+   * 이메일 인증 코드 전송
+   * @param email 사용자 이메일
+   */
+  async sendVerificationCode(email: string): Promise<void> {
+    if (this.isDisposableEmail(email)) {
+      throw new Error('Disposable email addresses are not allowed.');
+    }
+
+    const verificationCode = Math.floor(
+      100000 + Math.random() * 900000,
+    ).toString();
+    await this.redisService.set(`verification:${email}`, verificationCode, 180);
+    await this.mailService.sendVerificationEmail(email, verificationCode);
+  }
+
+  /**
+   * 인증 코드 검증
+   * @param email 사용자 이메일
+   * @param code 입력된 인증 코드
+   * @returns 인증 결과
+   */
+  async verifyCode(email: string, code: string): Promise<boolean> {
+    const storedCode = await this.redisService.get(`verification:${email}`);
+    return storedCode === code;
+  }
+
+  /**
+   * 닉네임 중복 여부 확인
+   * @param name 닉네임
+   * @returns 중복 여부
+   */
+  async checkNicknameAvailability(name: string): Promise<boolean> {
+    const existingUser = await this.userRepository.findOneByName(name);
+    return !existingUser;
+  }
+
+  /**
+   * 액세스 토큰에서 사용자 ID 추출
+   * @param token 액세스 토큰
+   * @returns 사용자 ID
+   */
+  async getUserIdFromToken(token: string): Promise<string> {
+    try {
+      const decoded = this.jwtService.verify(token);
+      return decoded.sub;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid access token');
+    }
+  }
+
+  /**
+   * 토큰 페이로드 생성
+   * @param userId 사용자 ID
+   * @returns 토큰 페이로드
+   */
+  private createTokenPayload(userId: string): TokenPayload {
     return {
       sub: userId,
       iat: Math.floor(Date.now() / 1000),
@@ -207,7 +282,16 @@ export class AuthService {
     };
   }
 
-  async createAccessToken(user: User, payload: TokenPayload): Promise<string> {
+  /**
+   * 새로운 액세스 토큰 생성
+   * @param user 사용자 객체
+   * @param payload 토큰 페이로드
+   * @returns 액세스 토큰
+   */
+  private async createAccessToken(
+    user: User,
+    payload: TokenPayload,
+  ): Promise<string> {
     const expiresIn = this.configService.get<string>('ACCESS_TOKEN_EXPIRY');
     const token = this.jwtService.sign(payload, { expiresIn });
     const expiresAt = this.calculateExpiry(expiresIn);
@@ -218,11 +302,19 @@ export class AuthService {
       token,
       expiresAt,
     );
-
     return token;
   }
 
-  async createRefreshToken(user: User, payload: TokenPayload): Promise<string> {
+  /**
+   * 새로운 리프레시 토큰 생성
+   * @param user 사용자 객체
+   * @param payload 토큰 페이로드
+   * @returns 리프레시 토큰
+   */
+  private async createRefreshToken(
+    user: User,
+    payload: TokenPayload,
+  ): Promise<string> {
     const expiresIn = this.configService.get<string>('REFRESH_TOKEN_EXPIRY');
     const token = this.jwtService.sign(payload, { expiresIn });
     const expiresAt = this.calculateExpiry(expiresIn);
@@ -233,10 +325,15 @@ export class AuthService {
       token,
       expiresAt,
     );
-
     return token;
   }
 
+  /**
+   * 사용자 인증 정보 검증
+   * @param email 사용자 이메일
+   * @param plainPassword 사용자 비밀번호
+   * @returns 인증된 사용자
+   */
   private async validateUser(
     email: string,
     plainPassword: string,
@@ -253,6 +350,13 @@ export class AuthService {
     );
   }
 
+  /**
+   * 토큰 블랙리스트 추가
+   * @param token 블랙리스트에 추가할 토큰
+   * @param jti 토큰 식별자
+   * @param type 토큰 유형
+   * @param expiryConfigKey 만료 설정 키
+   */
   private async addToBlacklist(
     token: string,
     jti: string,
@@ -270,21 +374,24 @@ export class AuthService {
     );
   }
 
+  /**
+   * 만료 시간 계산
+   * @param expiry 만료 설정 문자열
+   * @returns 만료 날짜
+   */
   private calculateExpiry(expiry: string): Date {
     let expiresInMilliseconds = 0;
 
     if (expiry.endsWith('d')) {
-      const days = parseInt(expiry.slice(0, -1), 10);
-      expiresInMilliseconds = days * 24 * 60 * 60 * 1000;
+      expiresInMilliseconds =
+        parseInt(expiry.slice(0, -1), 10) * 24 * 60 * 60 * 1000;
     } else if (expiry.endsWith('h')) {
-      const hours = parseInt(expiry.slice(0, -1), 10);
-      expiresInMilliseconds = hours * 60 * 60 * 1000;
+      expiresInMilliseconds =
+        parseInt(expiry.slice(0, -1), 10) * 60 * 60 * 1000;
     } else if (expiry.endsWith('m')) {
-      const minutes = parseInt(expiry.slice(0, -1), 10);
-      expiresInMilliseconds = minutes * 60 * 1000;
+      expiresInMilliseconds = parseInt(expiry.slice(0, -1), 10) * 60 * 1000;
     } else if (expiry.endsWith('s')) {
-      const seconds = parseInt(expiry.slice(0, -1), 10);
-      expiresInMilliseconds = seconds * 1000;
+      expiresInMilliseconds = parseInt(expiry.slice(0, -1), 10) * 1000;
     } else {
       throw new BusinessException(
         'auth',
@@ -297,42 +404,13 @@ export class AuthService {
     return new Date(Date.now() + expiresInMilliseconds);
   }
 
-  async getUserIdFromToken(token: string): Promise<string> {
-    try {
-      const decoded = this.jwtService.verify(token);
-      console.log('뜨냐?', decoded);
-      return decoded.sub;
-    } catch (error) {
-      throw new UnauthorizedException('Invalid access token');
-    }
-  }
-
+  /**
+   * 이메일이 일회용 이메일인지 확인
+   * @param email 이메일 주소
+   * @returns 일회용 이메일 여부
+   */
   private isDisposableEmail(email: string): boolean {
     const domain = email.split('@')[1];
-    const disposableDomainList = Object.values(disposableDomains) as string[]; // 배열로 변환
-    return disposableDomainList.includes(domain);
-  }
-
-  async sendVerificationCode(email: string): Promise<void> {
-    if (this.isDisposableEmail(email)) {
-      throw new Error('Disposable email addresses are not allowed.');
-    }
-
-    const verificationCode = Math.floor(
-      100000 + Math.random() * 900000,
-    ).toString();
-
-    await this.redisService.set(`verification:${email}`, verificationCode, 180); // 3분간 유효
-    await this.mailService.sendVerificationEmail(email, verificationCode);
-  }
-
-  async verifyCode(email: string, code: string): Promise<boolean> {
-    const storedCode = await this.redisService.get(`verification:${email}`);
-    return storedCode === code;
-  }
-
-  async checkNicknameAvailability(name: string): Promise<boolean> {
-    const existingUser = await this.userRepository.findOneByName(name);
-    return !existingUser;
+    return disposableDomains.includes(domain);
   }
 }

@@ -24,6 +24,10 @@ export class UserRepository extends Repository<User> {
     return this.repo.findOne({ where: { id } });
   }
 
+  async findOneByName(name: string): Promise<User | undefined> {
+    return this.repo.findOne({ where: { name } });
+  }
+
   async createUser(dto: CreateUserDto, hashedPassword: string): Promise<User> {
     const user = this.repo.create({
       name: dto.name,

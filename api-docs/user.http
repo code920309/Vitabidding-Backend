@@ -52,3 +52,12 @@ Content-Type: application/json
 POST {{domain}}/auth/logout
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
+
+###
+# 닉네임 중복검사
+POST {{domain}}/auth/check-nickname
+Content-Type: application/json
+
+{
+  "name": "배고파용"
+}

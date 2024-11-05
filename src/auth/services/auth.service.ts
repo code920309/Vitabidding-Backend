@@ -330,4 +330,9 @@ export class AuthService {
     const storedCode = await this.redisService.get(`verification:${email}`);
     return storedCode === code;
   }
+
+  async checkNicknameAvailability(name: string): Promise<boolean> {
+    const existingUser = await this.userRepository.findOneByName(name);
+    return !existingUser;
+  }
 }

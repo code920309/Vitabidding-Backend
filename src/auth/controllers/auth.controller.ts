@@ -156,4 +156,15 @@ export class AuthController {
     }
     return { message: 'Email verified successfully' };
   }
+
+  @Post('check-nickname')
+  async checkNickname(@Body('name') name: string) {
+    const isAvailable = await this.authService.checkNicknameAvailability(name);
+
+    if (!isAvailable) {
+      throw new HttpException('Nickname is already taken', HttpStatus.CONFLICT);
+    }
+
+    return { message: 'Nickname is available' };
+  }
 }

@@ -56,6 +56,7 @@ export class AuthController {
     res.json({
       message: 'Signup1 successful',
       accessToken: loginResult.accessToken,
+      refreshToken: loginResult.refreshToken,
       user: response,
     });
   }

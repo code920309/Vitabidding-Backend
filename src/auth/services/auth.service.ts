@@ -433,6 +433,10 @@ export class AuthService {
    */
   private isDisposableEmail(email: string): boolean {
     const domain = email.split('@')[1];
-    return disposableDomains.includes(domain);
+    // 2차원 배열을 1차원 배열로 변환
+    const disposableDomainList = (
+      Object.values(disposableDomains) as string[][]
+    ).flat();
+    return disposableDomainList.includes(domain);
   }
 }

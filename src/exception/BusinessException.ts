@@ -11,7 +11,8 @@ export type ErrorDomain =
   | 'auth'
   | 'user'
   | 'payment'
-  | 'investment';
+  | 'investment'
+  | 'validation';
 
 /**
  * 비즈니스 예외 클래스

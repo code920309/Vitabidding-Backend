@@ -1,7 +1,11 @@
 // src/auth/strategies/jwt.strategy.ts
 
 // NestJS 관련 라이브러리 및 데코레이터
-import { Injectable, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  HttpStatus,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 
@@ -37,20 +41,28 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: TokenPayload): Promise<User> {
     const { sub, jti } = payload;
 
-    // 토큰이 블랙리스트에 있는지 검사
-    const isBlacklisted =
-      await this.tokenBlacklistService.isTokenBlacklisted(jti);
-    if (isBlacklisted) {
-      console.log(`Token ${jti} is blacklisted. Returning 401 Unauthorized.`);
-      throw new BusinessException(
-        'auth',
-        'token-revoked',
-        'This token has been revoked',
-        HttpStatus.UNAUTHORIZED,
+    try {
+      // 토큰이 블랙리스트에 있는지 검사
+      const isBlacklisted =
+        await this.tokenBlacklistService.isTokenBlacklisted(jti);
+      if (isBlacklisted) {
+        throw new BusinessException(
+          'auth',
+          '블랙리스트에 등록된 토큰입니다.',
+          '해당 토큰은 무효화되었습니다.',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      // 블랙리스트에 없는 경우에만 사용자 인증
+      return await this.userService.validateUser(sub, jti);
+    } catch (error) {
+      if (error instanceof BusinessException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        '토큰 검증 중 예기치 않은 오류가 발생했습니다.',
       );
     }
-
-    // 블랙리스트에 없는 경우에만 사용자 인증
-    return this.userService.validateUser(sub, jti);
   }
 }

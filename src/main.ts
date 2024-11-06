@@ -8,6 +8,7 @@ import * as path from 'path';
 // NestJS 관련 라이브러리
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 
 // 애플리케이션 모듈 및 설정
 import { AppModule } from './app.module';
@@ -26,6 +27,23 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, getNestOptions());
   app.useGlobalFilters(new BusinessExceptionFilter());
+
+  // 전역 유효성 검사 파이프 설정
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true, // 요청 데이터를 DTO 인스턴스로 자동 변환
+      whitelist: true, // DTO에 정의된 속성만 허용하고 나머지는 무시
+      forbidNonWhitelisted: true, // 정의되지 않은 속성이 있으면 예외 처리
+      exceptionFactory: (errors) => {
+        // 첫 번째 에러의 첫 번째 메시지를 추출
+        const firstErrorMessage = errors[0]?.constraints
+          ? Object.values(errors[0].constraints)[0]
+          : 'Validation failed';
+
+        return new BadRequestException(firstErrorMessage);
+      },
+    }),
+  );
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('SERVER_PORT');

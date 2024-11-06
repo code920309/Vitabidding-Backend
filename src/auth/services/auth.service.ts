@@ -1,5 +1,11 @@
+// src/auth/services/auth.service.ts
 // NestJS 관련 라이브러리 및 데코레이터
-import { HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 
@@ -123,7 +129,7 @@ export class AuthService {
         throw new BusinessException(
           'auth',
           'token-revoked',
-          'This token has been revoked',
+          '이미 무효화된 토큰입니다.',
           HttpStatus.UNAUTHORIZED,
         );
       }
@@ -172,14 +178,9 @@ export class AuthService {
       await this.accessTokenRepository.save(activeAccessTokens);
       await this.refreshTokenRepository.save(activeRefreshTokens);
 
-      return { message: 'Logout successful for all active sessions' };
+      return { message: '모든 활성 세션에서 로그아웃 완료되었습니다.' };
     } catch (error) {
-      throw new BusinessException(
-        'auth',
-        'logout-failed',
-        'Failed to logout user',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new InternalServerErrorException('로그아웃 처리에 실패했습니다.');
     }
   }
 
@@ -202,7 +203,7 @@ export class AuthService {
         throw new BusinessException(
           'auth',
           'user-not-found',
-          'User not found',
+          '사용자를 찾을 수 없습니다.',
           HttpStatus.UNAUTHORIZED,
         );
       }
@@ -212,7 +213,7 @@ export class AuthService {
       throw new BusinessException(
         'auth',
         'invalid-refresh-token',
-        'Invalid refresh token',
+        '유효하지 않은 리프레시 토큰입니다.',
         HttpStatus.UNAUTHORIZED,
       );
     }
@@ -224,7 +225,12 @@ export class AuthService {
    */
   async sendVerificationCode(email: string): Promise<void> {
     if (this.isDisposableEmail(email)) {
-      throw new Error('Disposable email addresses are not allowed.');
+      throw new BusinessException(
+        'auth',
+        'disposable-email',
+        '일회용 이메일은 사용할 수 없습니다.',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const verificationCode = Math.floor(
@@ -242,6 +248,14 @@ export class AuthService {
    */
   async verifyCode(email: string, code: string): Promise<boolean> {
     const storedCode = await this.redisService.get(`verification:${email}`);
+    if (!storedCode) {
+      throw new BusinessException(
+        'auth',
+        'code-expired',
+        '인증 코드가 만료되었습니다.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
     return storedCode === code;
   }
 
@@ -252,7 +266,15 @@ export class AuthService {
    */
   async checkNicknameAvailability(name: string): Promise<boolean> {
     const existingUser = await this.userRepository.findOneByName(name);
-    return !existingUser;
+    if (existingUser) {
+      throw new BusinessException(
+        'auth',
+        'nickname-taken',
+        '이미 사용 중인 닉네임입니다.',
+        HttpStatus.CONFLICT,
+      );
+    }
+    return true;
   }
 
   /**
@@ -265,7 +287,7 @@ export class AuthService {
       const decoded = this.jwtService.verify(token);
       return decoded.sub;
     } catch (error) {
-      throw new UnauthorizedException('Invalid access token');
+      throw new UnauthorizedException('유효하지 않은 액세스 토큰입니다.');
     }
   }
 
@@ -345,7 +367,7 @@ export class AuthService {
     throw new BusinessException(
       'auth',
       'invalid-credentials',
-      'Invalid credentials',
+      '이메일 또는 비밀번호가 유효하지 않습니다.',
       HttpStatus.UNAUTHORIZED,
     );
   }
@@ -396,7 +418,7 @@ export class AuthService {
       throw new BusinessException(
         'auth',
         'invalid-expiry',
-        'Invalid expiry time',
+        '유효하지 않은 만료 시간 형식입니다.',
         HttpStatus.BAD_REQUEST,
       );
     }

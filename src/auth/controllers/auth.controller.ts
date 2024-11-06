@@ -62,7 +62,7 @@ export class AuthController {
     };
 
     res.json({
-      message: 'Signup1 successful',
+      message: '회원가입 완료',
       accessToken: loginResult.accessToken,
       refreshToken: loginResult.refreshToken,
       user: response,
@@ -81,7 +81,7 @@ export class AuthController {
     const accessToken = req.headers['authorization']?.split(' ')[1];
     if (!accessToken) {
       throw new HttpException(
-        { message: 'Access token is required' },
+        '액세스 토큰이 필요합니다.',
         HttpStatus.UNAUTHORIZED,
       );
     }
@@ -104,7 +104,7 @@ export class AuthController {
       phone: user.phone,
     };
 
-    return { message: 'Signup2 successful', user: response };
+    return { message: '추가 정보 입력 완료', user: response };
   }
 
   /**
@@ -143,14 +143,14 @@ export class AuthController {
 
     if (!accessToken) {
       throw new HttpException(
-        { message: 'Access token is required' },
+        '액세스 토큰이 필요합니다.',
         HttpStatus.BAD_REQUEST,
       );
     }
 
     await this.authService.logout(accessToken);
 
-    return { message: 'Logout successful' };
+    return { message: '로그아웃 성공' };
   }
 
   /**
@@ -169,7 +169,7 @@ export class AuthController {
   @Post('send-code')
   async sendVerificationCode(@Body('email') email: string) {
     await this.authService.sendVerificationCode(email);
-    return { message: 'Verification code sent' };
+    return { message: '인증 코드가 전송되었습니다.' };
   }
 
   /**
@@ -182,11 +182,11 @@ export class AuthController {
 
     if (!isValid) {
       throw new HttpException(
-        'Invalid verification code',
+        '인증 코드가 유효하지 않습니다.',
         HttpStatus.BAD_REQUEST,
       );
     }
-    return { message: 'Email verified successfully' };
+    return { message: '이메일 인증에 성공하였습니다.' };
   }
 
   /**
@@ -198,9 +198,12 @@ export class AuthController {
     const isAvailable = await this.authService.checkNicknameAvailability(name);
 
     if (!isAvailable) {
-      throw new HttpException('Nickname is already taken', HttpStatus.CONFLICT);
+      throw new HttpException(
+        '닉네임이 이미 사용 중입니다.',
+        HttpStatus.CONFLICT,
+      );
     }
 
-    return { message: 'Nickname is available' };
+    return { message: '사용 가능한 닉네임입니다.' };
   }
 }

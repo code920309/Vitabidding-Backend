@@ -1,6 +1,11 @@
 // src/auth/services/user.service.ts
 // NestJS 관련 라이브러리 및 데코레이터
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import {
+  HttpStatus,
+  Injectable,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 
 // 외부 라이브러리
 import * as argon2 from 'argon2';
@@ -28,7 +33,6 @@ export class UserService {
     private readonly addressRepo: AddressRepository,
     private readonly agreementVerifyRepo: AgreementVerifyRepository,
   ) {}
-
   /**
    * 사용자 생성
    * @param dto 사용자 생성에 필요한 데이터 전송 객체
@@ -41,17 +45,22 @@ export class UserService {
     if (user) {
       throw new BusinessException(
         'user',
-        `${dto.email} already exists`,
-        `${dto.email} already exists`,
-        HttpStatus.BAD_REQUEST,
+        '이미 존재하는 이메일입니다.',
+        '해당 이메일은 이미 사용 중입니다.',
+        HttpStatus.CONFLICT,
       );
     }
 
-    const hashedPassword = await argon2.hash(dto.password);
-    return this.userRepo.createUser(
-      { ...dto, email: normalizedEmail },
-      hashedPassword,
-    );
+    try {
+      const hashedPassword = await argon2.hash(dto.password);
+      return this.userRepo.createUser(
+        { ...dto, email: normalizedEmail },
+        hashedPassword,
+      );
+    } catch (error) {
+      this.logger.error('사용자 생성 중 오류 발생:', error);
+      throw new InternalServerErrorException('사용자 생성에 실패했습니다.');
+    }
   }
 
   /**
@@ -65,30 +74,37 @@ export class UserService {
     if (!user) {
       throw new BusinessException(
         'user',
-        'User not found',
-        'User not found',
-        HttpStatus.BAD_REQUEST,
+        '사용자를 찾을 수 없습니다.',
+        '해당 사용자를 찾을 수 없습니다.',
+        HttpStatus.NOT_FOUND,
       );
     }
 
     if (user.realName || user.phone) {
       throw new BusinessException(
         'user',
-        'Additional information already exists',
-        'Additional information already exists',
-        HttpStatus.BAD_REQUEST,
+        '이미 추가 정보가 존재합니다.',
+        '이미 추가 정보가 등록되어 있습니다.',
+        HttpStatus.CONFLICT,
       );
     }
 
-    user.realName = dto.realName;
-    user.phone = dto.phone;
-    await this.userRepo.save(user);
+    try {
+      user.realName = dto.realName;
+      user.phone = dto.phone;
+      await this.userRepo.save(user);
 
-    // Address 정보 저장
-    await this.addressRepo.createAddress(user, dto.address);
+      // Address 정보 저장
+      await this.addressRepo.createAddress(user, dto.address);
 
-    // AgreementVerify 정보 저장
-    await this.agreementVerifyRepo.createAgreement(user, dto.agreement);
+      // AgreementVerify 정보 저장
+      await this.agreementVerifyRepo.createAgreement(user, dto.agreement);
+    } catch (error) {
+      this.logger.error('사용자 추가 정보 업데이트 중 오류 발생:', error);
+      throw new InternalServerErrorException(
+        '추가 정보 업데이트에 실패했습니다.',
+      );
+    }
   }
 
   /**
@@ -97,16 +113,21 @@ export class UserService {
    * @returns 조회된 사용자 엔티티
    */
   async findUserById(userId: string): Promise<User> {
-    const user = await this.userRepo.findOneById(userId);
-    if (!user) {
-      throw new BusinessException(
-        'user',
-        'User not found',
-        'User not found',
-        HttpStatus.BAD_REQUEST,
-      );
+    try {
+      const user = await this.userRepo.findOneById(userId);
+      if (!user) {
+        throw new BusinessException(
+          'user',
+          '사용자를 찾을 수 없습니다.',
+          '해당 사용자를 찾을 수 없습니다.',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      return user;
+    } catch (error) {
+      this.logger.error('사용자 조회 중 오류 발생:', error);
+      throw new InternalServerErrorException('사용자 조회에 실패했습니다.');
     }
-    return user;
   }
 
   /**
@@ -116,30 +137,37 @@ export class UserService {
    * @returns 유효한 사용자 엔티티
    */
   async validateUser(id: string, jti: string): Promise<User> {
-    const [user, token] = await Promise.all([
-      this.userRepo.findOneBy({ id }),
-      this.accessTokenRepo.findOneByJti(jti),
-    ]);
+    try {
+      const [user, token] = await Promise.all([
+        this.userRepo.findOneBy({ id }),
+        this.accessTokenRepo.findOneByJti(jti),
+      ]);
 
-    if (!user) {
-      this.logger.error(`User ${id} not found`);
-      throw new BusinessException(
-        'user',
-        'User not found',
-        'User not found',
-        HttpStatus.BAD_REQUEST,
+      if (!user) {
+        this.logger.error(`User ${id} not found`);
+        throw new BusinessException(
+          'user',
+          '사용자를 찾을 수 없습니다.',
+          '해당 사용자를 찾을 수 없습니다.',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      if (!token) {
+        this.logger.error(`Token with jti ${jti} is revoked`);
+        throw new BusinessException(
+          'user',
+          '토큰이 무효화되었습니다.',
+          '유효하지 않은 토큰입니다.',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+      return user;
+    } catch (error) {
+      this.logger.error('사용자 및 토큰 유효성 검사 중 오류 발생:', error);
+      throw new InternalServerErrorException(
+        '사용자 및 토큰 유효성 검사에 실패했습니다.',
       );
     }
-
-    if (!token) {
-      this.logger.error(`Token with jti ${jti} is revoked`);
-      throw new BusinessException(
-        'user',
-        'Revoked token',
-        'Revoked token',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-    return user;
   }
 }

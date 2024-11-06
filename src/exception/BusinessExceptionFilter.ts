@@ -1,5 +1,3 @@
-// src/exception/BusinessExceptionFilter.ts
-// NestJS 관련 라이브러리 및 데코레이터
 import {
   ArgumentsHost,
   Catch,
@@ -8,85 +6,98 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-
-// Express 관련 타입
 import { Request, Response } from 'express';
-
-// 내부 예외 처리 및 타입
 import { BusinessException, ErrorDomain } from './BusinessException';
 
-/**
- * API 에러 응답 형식 인터페이스
- */
+// 에러 응답 형식을 정의한 인터페이스
 export interface ApiError {
   id: string;
   domain: ErrorDomain;
   message: string;
-  timestamp: Date;
+  timestamp: string;
+  status: number; // status 필드 사용
 }
 
-/**
- * 비즈니스 예외 필터
- * 비즈니스 로직 예외 및 기타 에러에 대한 일관된 응답 형식을 제공
- */
+// 한국 시간(KST, UTC+9)으로 변환하는 함수
+function getKstTimestamp(): string {
+  const now = new Date();
+  const kstOffset = 9 * 60 * 60 * 1000; // UTC+9 시간 차이
+  const kstTime = new Date(now.getTime() + kstOffset);
+  return kstTime.toISOString().replace('T', ' ').slice(0, 19); // YYYY-MM-DD HH:MM:SS 형식으로 반환
+}
+
+// Error 객체를 잡아서 처리하는 필터
 @Catch(Error)
 export class BusinessExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(BusinessExceptionFilter.name);
 
-  /**
-   * 예외를 캐치하고, HTTP 응답을 형성하여 반환
-   * @param exception 발생한 예외 객체
-   * @param host 현재 요청과 응답을 포함하는 호스트 객체
-   */
+  // 예외를 처리하는 메서드
   catch(exception: Error, host: ArgumentsHost) {
-    let body: ApiError;
+    const ctx = host.switchToHttp();
+    const request = ctx.getRequest<Request>();
+    const response = ctx.getResponse<Response>();
+    const timestamp = getKstTimestamp(); // KST 타임스탬프 생성
     let status: HttpStatus;
-    const stack: string =
-      exception.stack || (Error.captureStackTrace(exception), exception.stack);
+    let body: any;
 
-    // 비즈니스 예외 처리
+    // 1. BusinessException 처리
     if (exception instanceof BusinessException) {
       status = exception.status;
       body = {
         id: exception.id,
         domain: exception.domain,
-        message: exception.message,
-        timestamp: exception.timestamp,
+        message: exception.apiMessage,
+        timestamp,
+        status, // status 필드 사용
       };
     }
-    // HTTP 예외 처리
+    // 2. HttpException 처리 (예: ValidationPipe 에러)
     else if (exception instanceof HttpException) {
       status = exception.getStatus();
-      body = new BusinessException(
-        'generic',
-        exception.message,
-        exception.message,
-        exception.getStatus(),
-      );
+      const responseBody = exception.getResponse();
+
+      // responseBody가 객체인 경우 (예: ValidationPipe 에러 메시지) 그대로 포함하면서 statusCode 제거
+      body =
+        typeof responseBody === 'object'
+          ? {
+              ...responseBody,
+              id: new BusinessException('generic', '', '', status).id,
+              timestamp,
+              status,
+            }
+          : {
+              id: new BusinessException('generic', '', '', status).id,
+              domain: 'generic',
+              message: responseBody,
+              timestamp,
+              status,
+            };
+
+      // statusCode가 포함된 경우 status로 덮어쓰기 처리
+      delete body.statusCode;
     }
-    // 일반 예외 처리
+    // 3. 그 외 일반적인 에러 처리
     else {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
-      body = new BusinessException(
-        'generic',
-        `Internal server error: ${exception.message}`,
-        'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      body = {
+        id: new BusinessException('generic', '', '', status).id,
+        domain: 'generic',
+        message: `Internal server error: ${exception.message}`,
+        timestamp,
+        status,
+      };
     }
 
-    const ctx = host.switchToHttp();
-    const request = ctx.getRequest<Request>();
-    const response = ctx.getResponse<Response>();
-
+    // 서버 디버깅을 위한 에러 로그 (스택 트레이스 포함)
     this.logger.error(
       `Exception occurred: ${JSON.stringify({
         path: request.url,
         ...body,
       })}`,
-      stack,
+      exception.stack,
     );
 
+    // 클라이언트에게 포맷된 에러 응답 전송
     response.status(status).json(body);
   }
 }

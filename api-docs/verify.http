@@ -1,0 +1,39 @@
+@domain = https://localhost:4000
+
+###
+# 이메일 인증 요청
+POST {{domain}}/auth/send-code
+Content-Type: application/json
+
+{
+  "email": "user1@gmail.com"
+}
+
+###
+# 이메일 인증번호 검증
+POST {{domain}}/auth/verify-code
+Content-Type: application/json
+
+{
+  "email": "user1@gmail.com",
+  "code": "195183"
+}
+
+###
+# 휴대전화 인증 요청
+POST {{domain}}/auth/send-phone-code
+Content-Type: application/json
+
+{
+  "phoneNumber": "하이픈을 제외한 번호"
+}
+
+###
+# 휴대전화 인증번호 검증
+POST {{domain}}/auth/verify-phone-code
+Content-Type: application/json
+
+{
+  "phoneNumber": "01012345678",
+  "code": "320429"
+}

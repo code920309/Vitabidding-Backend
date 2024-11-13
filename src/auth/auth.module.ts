@@ -40,10 +40,13 @@ import { JwtStrategy } from './strategies';
 // 컨트롤러
 import { AuthController } from './controllers';
 
+import { NaverModule } from '../naver/naver.module';
+
 @Module({
   imports: [
     HttpModule,
     ConfigModule,
+    NaverModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

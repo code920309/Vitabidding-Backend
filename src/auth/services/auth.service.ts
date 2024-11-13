@@ -25,6 +25,7 @@ import {
 import { TokenBlacklistService } from './token-blacklist.service';
 import { RedisService } from '../../redis/redis.service';
 import { MailService } from '../../mail/mail.service';
+import { NaverService } from '../../naver/naver.service';
 
 // DTO 및 타입
 import { LoginResDto } from '../dto';
@@ -43,6 +44,7 @@ export class AuthService {
     private readonly tokenBlacklistService: TokenBlacklistService,
     private readonly redisService: RedisService,
     private readonly mailService: MailService,
+    private readonly naverService: NaverService,
   ) {}
 
   /**
@@ -438,5 +440,25 @@ export class AuthService {
       Object.values(disposableDomains) as string[][]
     ).flat();
     return disposableDomainList.includes(domain);
+  }
+
+  async sendPhoneVerificationCode(phoneNumber: string): Promise<void> {
+    const verificationCode = Math.floor(
+      100000 + Math.random() * 900000,
+    ).toString();
+    await this.redisService.set(
+      `verification:phone:${phoneNumber}`,
+      verificationCode,
+      180,
+    ); // 3분간 유효
+
+    await this.naverService.sendVerificationCode(phoneNumber, verificationCode);
+  }
+
+  async verifyPhoneCode(phoneNumber: string, code: string): Promise<boolean> {
+    const storedCode = await this.redisService.get(
+      `verification:phone:${phoneNumber}`,
+    );
+    return storedCode === code;
   }
 }

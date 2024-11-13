@@ -206,4 +206,26 @@ export class AuthController {
 
     return { message: '사용 가능한 닉네임입니다.' };
   }
+
+  @Post('send-phone-code')
+  async sendPhoneVerificationCode(@Body('phoneNumber') phoneNumber: string) {
+    await this.authService.sendPhoneVerificationCode(phoneNumber);
+    return { message: 'Verification code sent' };
+  }
+
+  @Post('verify-phone-code')
+  async verifyPhoneCode(
+    @Body('phoneNumber') phoneNumber: string,
+    @Body('code') code: string,
+  ) {
+    const isValid = await this.authService.verifyPhoneCode(phoneNumber, code);
+
+    if (!isValid) {
+      throw new HttpException(
+        'Invalid verification code',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    return { message: 'Phone number verified successfully' };
+  }
 }

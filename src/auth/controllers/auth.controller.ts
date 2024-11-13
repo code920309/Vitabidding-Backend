@@ -3,6 +3,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpException,
   HttpStatus,
@@ -283,5 +284,31 @@ export class AuthController {
     await this.userService.updateUserProfile(userId, updateUserDto);
 
     return { message: '사용자 정보가 성공적으로 수정되었습니다.' };
+  }
+
+  // 회원탈퇴
+  @UseGuards(JwtAuthGuard)
+  @Delete('delete-account')
+  async deleteAccount(@Req() req: Request): Promise<{ message: string }> {
+    // JWT 토큰에서 사용자 ID 추출
+    const accessToken = req.headers['authorization']?.split(' ')[1];
+    if (!accessToken) {
+      throw new HttpException(
+        '액세스 토큰이 필요합니다.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const userId = await this.authService.getUserIdFromToken(accessToken);
+    if (!userId) {
+      throw new HttpException(
+        '유효하지 않은 요청입니다.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.userService.deleteUserAccount(userId);
+
+    return { message: '회원 탈퇴가 완료되었습니다.' };
   }
 }

@@ -10,7 +10,7 @@ Content-Type: application/json
 
 {
   "name": "배고파용",
-  "email": "user5@gmail.com",
+  "email": "user1@gmail.com",
   "password": "123qweQWE!",
   "role": "user"
 }
@@ -43,7 +43,7 @@ POST {{domain}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "user5@gmail.com",
+  "email": "user1@gmail.com",
   "password": "123qweQWE!"
 }
 
@@ -75,3 +75,9 @@ Authorization: Bearer {{accessToken}}
     "state": "Seoul"
   }
 }
+
+### 회원탈퇴
+#
+DELETE {{domain}}/auth/delete-account
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}

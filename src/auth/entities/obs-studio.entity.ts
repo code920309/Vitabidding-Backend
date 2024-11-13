@@ -4,7 +4,7 @@ import { User } from './user.entity';
 
 @Entity()
 export class ObsStudio extends BaseEntity {
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE' }) // User 삭제 시 RefreshToken도 삭제
   user: Relation<User>;
 
   @Column()

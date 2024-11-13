@@ -6,7 +6,7 @@ import { User } from './user.entity';
 @Entity()
 @Index('changebusiness_userid_index', ['user'])
 export class ChangeBusiness extends BaseEntity {
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE' }) // User 삭제 시 ObsStudio도 삭제
   user: Relation<User>;
 
   @Column()

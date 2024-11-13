@@ -232,4 +232,22 @@ export class UserService {
       }
     }
   }
+
+  /**
+   * 사용자 계정을 삭제하고 관련 데이터를 모두 제거합니다.
+   * @param userId 삭제할 사용자 ID
+   */
+  async deleteUserAccount(userId: string): Promise<void> {
+    const user = await this.userRepo.findOneById(userId);
+    if (!user) {
+      throw new BusinessException(
+        'user',
+        '사용자를 찾을 수 없습니다.',
+        '해당 사용자를 찾을 수 없습니다.',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.userRepo.delete(userId);
+  }
 }

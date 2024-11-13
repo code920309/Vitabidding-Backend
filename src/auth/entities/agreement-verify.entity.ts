@@ -6,7 +6,7 @@ import { User } from './user.entity';
 @Entity()
 @Index('agreementverify_userid_index', ['user'])
 export class AgreementVerify extends BaseEntity {
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE' }) // User 삭제 시 AgreementVerify도 삭제
   user: Relation<User>;
 
   @Column({

@@ -5,7 +5,7 @@ import { User } from './user.entity';
 
 @Entity()
 export class Address extends BaseEntity {
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE' }) // User 삭제 시 Address도 삭제
   user: Relation<User>;
 
   @Column()

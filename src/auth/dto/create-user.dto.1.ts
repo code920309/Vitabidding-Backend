@@ -13,13 +13,9 @@ export class CreateUserDto1 {
   email: string;
 
   @IsNotEmpty({ message: '비밀번호는 필수 입력 항목입니다.' })
-  @Matches(
-    /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-    {
-      message:
-        '비밀번호는 최소 8자, 숫자, 대문자, 소문자, 특수문자를 포함해야 합니다.',
-    },
-  )
+  @Matches(/^(?=.*\d)(?=.*[a-zA-Z])(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, {
+    message: '비밀번호는 최소 8자, 숫자, 영문, 특수문자를 포함해야 합니다.',
+  })
   password: string;
 
   @IsIn(['admin', 'user'], { message: '유효한 사용자 역할을 선택해야 합니다.' })

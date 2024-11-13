@@ -35,4 +35,10 @@ export const validationSchema = Joi.object({
   // NodeMailer
   NODE_MAILER_ID: Joi.string().required(),
   NODE_MAILER_PW: Joi.string().required(),
+
+  // Naver SMS
+  NAVER_ACCESS_KEY: Joi.string().required(),
+  NAVER_SECRET_KEY: Joi.string().required(),
+  NAVER_SERVICE_ID: Joi.string().required(),
+  NAVER_CALLER: Joi.string().required(),
 });

@@ -10,7 +10,7 @@ Content-Type: application/json
 
 {
   "name": "배고파용",
-  "email": "user1@gmail.com",
+  "email": "user100@gmail.com",
   "password": "123qweQWE!",
   "role": "user"
 }
@@ -43,7 +43,7 @@ POST {{domain}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "user10@gmail.com",
+  "email": "user1@gmail.com",
   "password": "123qweQWE!"
 }
 
@@ -53,11 +53,8 @@ POST {{domain}}/auth/logout
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
-###
-# 닉네임 중복검사
-POST {{domain}}/auth/check-nickname
+### 
+# 사용자 정보 조회
+GET {{domain}}/auth/profile
 Content-Type: application/json
-
-{
-  "name": "배고파용"
-}
+Authorization: Bearer {{accessToken}}

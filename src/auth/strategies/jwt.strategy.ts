@@ -5,6 +5,7 @@ import {
   Injectable,
   HttpStatus,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
@@ -21,8 +22,8 @@ import { BusinessException } from '../../exception';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    private readonly userService: UserService,
     private readonly configService: ConfigService,
+    private readonly userService: UserService,
     private readonly tokenBlacklistService: TokenBlacklistService,
   ) {
     super({
@@ -33,7 +34,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   /**
-   * JWT 토큰을 검증하고 블랙리스트 여부 확인
+   * JWT 토큰을 검증하고 블랙리스트 여부 확인 및 사용자 유효성 검사
    * @param payload JWT 토큰의 페이로드
    * @returns 유효한 사용자 엔티티
    * @throws 토큰이 블랙리스트에 있거나 유효하지 않은 경우 예외 발생
@@ -42,7 +43,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const { sub, jti } = payload;
 
     try {
-      // 토큰이 블랙리스트에 있는지 검사
+      // 1. 토큰이 블랙리스트에 있는지 검사
       const isBlacklisted =
         await this.tokenBlacklistService.isTokenBlacklisted(jti);
       if (isBlacklisted) {
@@ -54,8 +55,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         );
       }
 
-      // 블랙리스트에 없는 경우에만 사용자 인증
-      return await this.userService.validateUser(sub, jti);
+      // 2. 유효한 사용자 확인
+      const user = await this.userService.findUserById(sub);
+      if (!user) {
+        throw new UnauthorizedException('유효하지 않은 사용자입니다.');
+      }
+
+      return user;
     } catch (error) {
       if (error instanceof BusinessException) {
         throw error;

@@ -170,4 +170,22 @@ export class UserService {
       );
     }
   }
+
+  async findUserWithAddressById(userId: string): Promise<User> {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['addresses'], // Address 테이블 포함
+    });
+
+    if (!user) {
+      throw new BusinessException(
+        'user',
+        '사용자를 찾을 수 없습니다.',
+        '해당 사용자를 찾을 수 없습니다.',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return user;
+  }
 }

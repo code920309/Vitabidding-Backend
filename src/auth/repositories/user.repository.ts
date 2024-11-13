@@ -65,4 +65,16 @@ export class UserRepository extends Repository<User> {
 
     return this.repo.save(user);
   }
+
+  /**
+   * ID로 사용자 조회 (주소 정보 포함)
+   * @param userId 사용자 ID
+   * @returns 주소 정보가 포함된 사용자 엔티티
+   */
+  async findOneByIdWithAddress(userId: string): Promise<User | undefined> {
+    return this.repo.findOne({
+      where: { id: userId },
+      relations: ['addresses'], // Address 테이블 포함
+    });
+  }
 }

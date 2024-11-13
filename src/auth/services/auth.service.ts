@@ -286,7 +286,9 @@ export class AuthService {
    */
   async getUserIdFromToken(token: string): Promise<string> {
     try {
-      const decoded = this.jwtService.verify(token);
+      const decoded = this.jwtService.verify(token, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+      });
       return decoded.sub;
     } catch (error) {
       throw new UnauthorizedException('유효하지 않은 액세스 토큰입니다.');

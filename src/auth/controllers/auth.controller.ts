@@ -3,15 +3,18 @@
 import {
   Body,
   Controller,
+  Get,
   HttpException,
   HttpStatus,
   Post,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 
 // 서비스 및 DTO
 import { AuthService, UserService } from '../services';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import {
   CreateUserDto1,
   CreateUserDto2,
@@ -227,5 +230,36 @@ export class AuthController {
       );
     }
     return { message: 'Phone number verified successfully' };
+  }
+
+  /**
+   * 사용자 정보 조회
+   * 주소를 포함한 사용자 정보 반환
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  async getProfile(@Req() req: Request) {
+    const userId = await this.authService.getUserIdFromToken(
+      req.headers['authorization']?.split(' ')[1],
+    );
+
+    if (!userId) {
+      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+    }
+
+    const user = await this.userService.findUserWithAddressById(userId);
+
+    return {
+      message: '사용자 정보 조회 성공',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        realName: user.realName,
+        phone: user.phone,
+        addresses: user.addresses,
+      },
+    };
   }
 }

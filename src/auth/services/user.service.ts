@@ -21,7 +21,11 @@ import {
 } from '../repositories';
 
 // DTO
-import { CreateUserDto1, CreateUserDto2WithUserIdDto } from '../dto';
+import {
+  CreateUserDto1,
+  CreateUserDto2WithUserIdDto,
+  UpdateUserDto,
+} from '../dto';
 
 @Injectable()
 export class UserService {
@@ -187,5 +191,45 @@ export class UserService {
     }
 
     return user;
+  }
+
+  async updateUserProfile(
+    userId: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<void> {
+    const user = await this.userRepo.findOneById(userId);
+    if (!user) {
+      throw new BusinessException(
+        'user',
+        '사용자를 찾을 수 없습니다.',
+        '해당 사용자를 찾을 수 없습니다.',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    // 사용자 정보 업데이트
+    if (updateUserDto.name) user.name = updateUserDto.name;
+
+    // 비밀번호가 포함되어 있다면 해싱하여 업데이트
+    if (updateUserDto.password) {
+      user.password = await argon2.hash(updateUserDto.password);
+    }
+
+    await this.userRepo.save(user);
+
+    // 주소 정보 업데이트
+    if (updateUserDto.address) {
+      const existingAddress = user.addresses?.[0];
+      if (existingAddress) {
+        // 이미 등록된 주소가 있으면 수정
+        await this.addressRepo.updateAddress(
+          existingAddress.id,
+          updateUserDto.address,
+        );
+      } else {
+        // 주소가 없는 경우 새로 추가
+        await this.addressRepo.createAddress(user, updateUserDto.address);
+      }
+    }
   }
 }

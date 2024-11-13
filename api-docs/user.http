@@ -10,7 +10,7 @@ Content-Type: application/json
 
 {
   "name": "배고파용",
-  "email": "user100@gmail.com",
+  "email": "user5@gmail.com",
   "password": "123qweQWE!",
   "role": "user"
 }
@@ -43,7 +43,7 @@ POST {{domain}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "user1@gmail.com",
+  "email": "user5@gmail.com",
   "password": "123qweQWE!"
 }
 
@@ -58,3 +58,20 @@ Authorization: Bearer {{accessToken}}
 GET {{domain}}/auth/profile
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
+
+### 회원 정보 수정
+#
+PUT {{domain}}/auth/profile
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "New Name",
+  "password": "123qweQWE!",
+  "address": {
+    "zipCode": "12345",
+    "streetAddress1": "New Street Address 1",
+    "streetAddress2": "New Street Address 2",
+    "state": "Seoul"
+  }
+}

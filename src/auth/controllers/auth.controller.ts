@@ -7,6 +7,7 @@ import {
   HttpException,
   HttpStatus,
   Post,
+  Put,
   Req,
   Res,
   UseGuards,
@@ -23,6 +24,7 @@ import {
   LoginResDto,
   RefreshReqDto,
   SignupResDto,
+  UpdateUserDto,
 } from '../dto';
 
 // Express 타입
@@ -261,5 +263,25 @@ export class AuthController {
         addresses: user.addresses,
       },
     };
+  }
+
+  // 회원 정보 수정
+  @UseGuards(JwtAuthGuard)
+  @Put('profile')
+  async updateProfile(
+    @Req() req: Request,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    const userId = await this.authService.getUserIdFromToken(
+      req.headers['authorization']?.split(' ')[1],
+    );
+
+    if (!userId) {
+      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+    }
+
+    await this.userService.updateUserProfile(userId, updateUserDto);
+
+    return { message: '사용자 정보가 성공적으로 수정되었습니다.' };
   }
 }

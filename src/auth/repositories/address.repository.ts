@@ -37,4 +37,14 @@ export class AddressRepository extends Repository<Address> {
 
     return this.repo.save(address);
   }
+
+  // 사용자 주소 업데이트
+  async updateAddress(addressId: string, addressDto: any): Promise<void> {
+    await this.repo.update(addressId, {
+      zipCode: addressDto.zipCode,
+      streetAddress1: addressDto.streetAddress1,
+      streetAddress2: addressDto.streetAddress2,
+      state: addressDto.state,
+    });
+  }
 }

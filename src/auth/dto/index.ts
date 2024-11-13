@@ -6,3 +6,4 @@ export * from './login-req.dto';
 export * from './login-res.dto';
 export * from './signup-res.dto';
 export * from './refresh-req.dto';
+export * from './update-user.dto';

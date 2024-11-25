@@ -27,6 +27,7 @@ import {
   SignupResDto,
   UpdateUserDto,
 } from '../dto';
+import { Token } from '../../common/decorators/token.decorator';
 
 // Express 타입
 import { Request, Response } from 'express';
@@ -81,10 +82,9 @@ export class AuthController {
    */
   @Post('signup2')
   async signup2(
-    @Req() req: Request,
+    @Token() accessToken: string, // 커스텀 데코레이터 사용
     @Body() createUserDto2: CreateUserDto2,
   ): Promise<{ message: string; user: SignupResDto }> {
-    const accessToken = req.headers['authorization']?.split(' ')[1];
     if (!accessToken) {
       throw new HttpException(
         '액세스 토큰이 필요합니다.',
@@ -144,9 +144,7 @@ export class AuthController {
    * 액세스 토큰을 이용하여 사용자 로그아웃 처리
    */
   @Post('logout')
-  async logout(@Req() req: Request): Promise<{ message: string }> {
-    const accessToken = req.headers['authorization']?.split(' ')[1];
-
+  async logout(@Token() accessToken: string): Promise<{ message: string }> {
     if (!accessToken) {
       throw new HttpException(
         '액세스 토큰이 필요합니다.',
@@ -241,14 +239,12 @@ export class AuthController {
    */
   @UseGuards(JwtAuthGuard)
   @Get('profile')
-  async getProfile(@Req() req: Request) {
-    const userId = await this.authService.getUserIdFromToken(
-      req.headers['authorization']?.split(' ')[1],
-    );
-
-    if (!userId) {
+  async getProfile(@Token() accessToken: string): Promise<any> {
+    if (!accessToken) {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
+
+    const userId = await this.authService.getUserIdFromToken(accessToken);
 
     const user = await this.userService.findUserWithAddressById(userId);
 
@@ -270,16 +266,14 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Put('profile')
   async updateProfile(
-    @Req() req: Request,
+    @Token() accessToken: string, // 커스텀 데코레이터 사용
     @Body() updateUserDto: UpdateUserDto,
   ) {
-    const userId = await this.authService.getUserIdFromToken(
-      req.headers['authorization']?.split(' ')[1],
-    );
-
-    if (!userId) {
+    if (!accessToken) {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
+
+    const userId = await this.authService.getUserIdFromToken(accessToken);
 
     await this.userService.updateUserProfile(userId, updateUserDto);
 
@@ -289,9 +283,9 @@ export class AuthController {
   // 회원탈퇴
   @UseGuards(JwtAuthGuard)
   @Delete('delete-account')
-  async deleteAccount(@Req() req: Request): Promise<{ message: string }> {
-    // JWT 토큰에서 사용자 ID 추출
-    const accessToken = req.headers['authorization']?.split(' ')[1];
+  async deleteAccount(
+    @Token() accessToken: string,
+  ): Promise<{ message: string }> {
     if (!accessToken) {
       throw new HttpException(
         '액세스 토큰이 필요합니다.',

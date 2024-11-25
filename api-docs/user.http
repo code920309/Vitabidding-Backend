@@ -10,7 +10,7 @@ Content-Type: application/json
 
 {
   "name": "배고파용",
-  "email": "user1@gmail.com",
+  "email": "user51@gmail.com",
   "password": "123qweQWE!",
   "role": "user"
 }
@@ -43,7 +43,7 @@ POST {{domain}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "user1@gmail.com",
+  "email": "user51@gmail.com",
   "password": "123qweQWE!"
 }
 

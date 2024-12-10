@@ -3,7 +3,7 @@
 @refreshToken = {{loginToken.response.body.$.refreshToken}}
 
 ###
-# 사용자 회원가입 (로그인도 같이 진행)
+# 회원가입 (로그인도 같이 진행)
 # @name loginToken
 POST {{domain}}/auth/signup1
 Content-Type: application/json
@@ -16,7 +16,7 @@ Content-Type: application/json
 }
 
 ###
-# 사용자 추가 정보 입력
+# 추가정보 입력
 POST {{domain}}/auth/signup2
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
@@ -37,7 +37,7 @@ Authorization: Bearer {{accessToken}}
 }
 
 ###
-# 사용자 로그인
+# 로그인
 # @name loginToken
 POST {{domain}}/auth/login
 Content-Type: application/json
@@ -54,12 +54,12 @@ Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
 ### 
-# 사용자 정보 조회
+# 계정정보 조회
 GET {{domain}}/auth/profile
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
-### 회원 정보 수정
+### 회원정보 수정
 #
 PUT {{domain}}/auth/profile
 Content-Type: application/json
@@ -82,7 +82,7 @@ DELETE {{domain}}/auth/delete-account
 Content-Type: application/json
 Authorization: Bearer {{accessToken}}
 
-### 사업자 회원으로 전환
+### 사업자 전환
 #
 POST {{domain}}/auth/convert-to-business
 Content-Type: application/json
@@ -92,3 +92,9 @@ Authorization: Bearer {{accessToken}}
   "usagePolicyC": true,
   "personalInformationC": true
 }
+
+### 
+# 사업자 전환 유무 조회
+GET {{domain}}/auth/business-status
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}

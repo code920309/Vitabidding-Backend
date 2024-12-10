@@ -15,6 +15,7 @@ import { validationSchema } from './config/validation.schema';
 // 모듈
 import { AuthModule } from './auth/auth.module';
 import { RedisModule } from './redis/redis.module';
+import { BusinessModule } from './business/business.module';
 
 // 글로벌 인터셉터
 import { LoggingInterceptor } from './interceptors';
@@ -62,6 +63,7 @@ import { DataSource } from 'typeorm';
     AuthModule,
     // Redis 모듈
     RedisModule,
+    BusinessModule,
   ],
   controllers: [AppController], // 애플리케이션 컨트롤러
   providers: [

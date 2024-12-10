@@ -336,4 +336,30 @@ export class AuthController {
     await this.userService.convertToBusiness(userId, dto);
     return { message: '사업자 계정으로 전환되었습니다.' };
   }
+
+  /**
+   * 사업자 계정 전환 상태 조회
+   */
+  @Get('business-status')
+  async getBusinessStatus(
+    @Token() accessToken: string,
+  ): Promise<{ businessChk: boolean }> {
+    if (!accessToken) {
+      throw new HttpException(
+        '액세스 토큰이 필요합니다.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const userId = await this.authService.getUserIdFromToken(accessToken);
+    if (!userId) {
+      throw new HttpException(
+        '유효하지 않은 요청입니다.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const status = await this.userService.getBusinessStatus(userId);
+    return { businessChk: status };
+  }
 }

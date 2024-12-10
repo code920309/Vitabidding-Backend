@@ -1,4 +1,4 @@
-// src/product/entities/bid.entity.ts
+// src/business/entities/bid.entity.ts
 import { Entity, Column, ManyToOne, Relation, Index } from 'typeorm';
 import { BaseEntity } from '../../common/entity';
 import { User } from '../../auth/entities/user.entity';

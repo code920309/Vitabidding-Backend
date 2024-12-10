@@ -315,4 +315,24 @@ export class UserService {
 
     await this.obsStudioRepo.createObsStudio(obsStudio);
   }
+
+  /**
+   * 사업자 계정 전환 상태 조회
+   * @param userId 사용자 ID
+   * @returns 사업자 전환 상태 (businessChk)
+   */
+  async getBusinessStatus(userId: string): Promise<boolean> {
+    const agreement = await this.agreementVerifyRepo.findByUserId(userId);
+
+    if (!agreement) {
+      throw new BusinessException(
+        'agreement',
+        '약관 동의 정보를 찾을 수 없습니다.',
+        '사업자 전환 상태를 확인할 수 없습니다.',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return agreement.businessChk;
+  }
 }

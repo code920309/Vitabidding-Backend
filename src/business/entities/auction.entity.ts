@@ -1,4 +1,4 @@
-// src/product/entities/auction.entity.ts
+// src/business/entities/auction.entity.ts
 import { Entity, Column, ManyToOne, Relation, Index } from 'typeorm';
 import { BaseEntity } from '../../common/entity';
 import { Product } from './product.entity';

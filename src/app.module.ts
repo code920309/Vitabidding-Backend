@@ -15,7 +15,6 @@ import { validationSchema } from './config/validation.schema';
 // 모듈
 import { AuthModule } from './auth/auth.module';
 import { RedisModule } from './redis/redis.module';
-import { NaverModule } from './naver/naver.module';
 
 // 글로벌 인터셉터
 import { LoggingInterceptor } from './interceptors';
@@ -63,8 +62,6 @@ import { DataSource } from 'typeorm';
     AuthModule,
     // Redis 모듈
     RedisModule,
-    // 네이버 모듈
-    NaverModule,
   ],
   controllers: [AppController], // 애플리케이션 컨트롤러
   providers: [

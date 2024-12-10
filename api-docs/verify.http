@@ -25,7 +25,7 @@ Content-Type: application/json
 
 {
   "email": "user1@gmail.com",
-  "code": "195183"
+  "code": "234455"
 }
 
 ###
@@ -34,7 +34,7 @@ POST {{domain}}/auth/send-phone-code
 Content-Type: application/json
 
 {
-  "phoneNumber": "하이픈을 제외한 번호"
+  "phoneNumber": "01012345678"
 }
 
 ###
@@ -44,5 +44,5 @@ Content-Type: application/json
 
 {
   "phoneNumber": "01012345678",
-  "code": "320429"
+  "code": "853930"
 }

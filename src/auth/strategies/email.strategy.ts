@@ -1,4 +1,4 @@
-// src/mail/mail.service.ts
+// src/auth/strategies/email.strategy.ts
 // NestJS 관련 라이브러리
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
-export class MailService {
+export class EmailStrategy {
   private transporter;
 
   constructor(private readonly configService: ConfigService) {

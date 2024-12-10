@@ -1,11 +1,12 @@
 // src/auth/strategies/jwt.strategy.ts
-
 // NestJS 관련 라이브러리 및 데코레이터
 import {
   Injectable,
   HttpStatus,
   InternalServerErrorException,
   UnauthorizedException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
@@ -24,6 +25,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly configService: ConfigService,
     private readonly userService: UserService,
+    @Inject(forwardRef(() => TokenBlacklistService))
     private readonly tokenBlacklistService: TokenBlacklistService,
   ) {
     super({

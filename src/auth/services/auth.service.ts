@@ -24,8 +24,7 @@ import {
 } from '../repositories';
 import { TokenBlacklistService } from './token-blacklist.service';
 import { RedisService } from '../../redis/redis.service';
-import { MailService } from '../../mail/mail.service';
-import { NaverService } from '../../naver/naver.service';
+import { EmailStrategy, SmsStrategy } from '../strategies';
 
 // DTO 및 타입
 import { LoginResDto } from '../dto';
@@ -43,8 +42,8 @@ export class AuthService {
     private readonly accessLogRepository: AccessLogRepository,
     private readonly tokenBlacklistService: TokenBlacklistService,
     private readonly redisService: RedisService,
-    private readonly mailService: MailService,
-    private readonly naverService: NaverService,
+    private readonly emailStrategy: EmailStrategy,
+    private readonly smsStrategy: SmsStrategy,
   ) {}
 
   /**
@@ -239,7 +238,7 @@ export class AuthService {
       100000 + Math.random() * 900000,
     ).toString();
     await this.redisService.set(`verification:${email}`, verificationCode, 180);
-    await this.mailService.sendVerificationEmail(email, verificationCode);
+    await this.emailStrategy.sendVerificationEmail(email, verificationCode);
   }
 
   /**
@@ -454,7 +453,7 @@ export class AuthService {
       180,
     ); // 3분간 유효
 
-    await this.naverService.sendVerificationCode(phoneNumber, verificationCode);
+    await this.smsStrategy.sendVerificationCode(phoneNumber, verificationCode);
   }
 
   async verifyPhoneCode(phoneNumber: string, code: string): Promise<boolean> {

@@ -35,20 +35,16 @@ import {
 
 // 서비스 및 전략
 import { AuthService, TokenBlacklistService, UserService } from './services';
-import { MailService } from '../mail/mail.service';
-import { JwtStrategy } from './strategies';
+import { JwtStrategy, EmailStrategy, SmsStrategy } from './strategies';
 import { JwtAuthGuard } from '../common/guards';
 
 // 컨트롤러
 import { AuthController } from './controllers';
 
-import { NaverModule } from '../naver/naver.module';
-
 @Module({
   imports: [
     HttpModule,
     ConfigModule,
-    NaverModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -78,8 +74,9 @@ import { NaverModule } from '../naver/naver.module';
     AuthService,
     UserService,
     TokenBlacklistService,
-    MailService,
     JwtStrategy,
+    EmailStrategy,
+    SmsStrategy,
 
     // Repositories
     UserRepository,
@@ -97,8 +94,9 @@ import { NaverModule } from '../naver/naver.module';
     AuthService,
     UserService,
     TokenBlacklistService,
-    MailService,
     JwtStrategy,
+    EmailStrategy,
+    SmsStrategy,
 
     // Repositories
     UserRepository,

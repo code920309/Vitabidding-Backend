@@ -6,6 +6,7 @@ import {
   Logger,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { Transactional } from 'typeorm-transactional';
 
 // 외부 라이브러리
 import * as argon2 from 'argon2';
@@ -18,13 +19,17 @@ import {
   UserRepository,
   AddressRepository,
   AgreementVerifyRepository,
+  ObsStudioRepository,
 } from '../repositories';
+
+import { generateRandomString } from '../../util';
 
 // DTO
 import {
   CreateUserDto1,
   CreateUserDto2WithUserIdDto,
   UpdateUserDto,
+  ConvertToBusinessDto,
 } from '../dto';
 
 @Injectable()
@@ -36,6 +41,7 @@ export class UserService {
     private readonly accessTokenRepo: AccessTokenRepository,
     private readonly addressRepo: AddressRepository,
     private readonly agreementVerifyRepo: AgreementVerifyRepository,
+    private readonly obsStudioRepo: ObsStudioRepository,
   ) {}
   /**
    * 사용자 생성
@@ -249,5 +255,64 @@ export class UserService {
     }
 
     await this.userRepo.delete(userId);
+  }
+
+  /**
+   * 사업자 계정으로 전환
+   * @param userId 사용자 ID
+   * @param dto 사업자 전환 정보 DTO
+   */
+  @Transactional()
+  async convertToBusiness(
+    userId: string,
+    dto: ConvertToBusinessDto,
+  ): Promise<void> {
+    // 사용자 확인
+    const user = await this.userRepo.findOneById(userId);
+    if (!user) {
+      throw new BusinessException(
+        'user',
+        '사용자를 찾을 수 없습니다.',
+        '유효하지 않은 사용자 ID입니다.',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    // AgreementVerify 확인 및 업데이트
+    const agreement = await this.agreementVerifyRepo.findOneBy({
+      user: { id: userId },
+    });
+    if (!agreement) {
+      throw new BusinessException(
+        'agreement',
+        '약관 동의 정보를 찾을 수 없습니다.',
+        '약관 동의가 필요합니다.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (agreement.businessChk) {
+      throw new BusinessException(
+        'agreement',
+        '사업자 계정 전환 정보가 존재합니다.',
+        '사업자 계정으로 이미 전환된 계정입니다.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.agreementVerifyRepo.updateAgreement(userId, {
+      usagePolicyC: dto.usagePolicyC,
+      personalInformationC: dto.personalInformationC,
+      businessChk: true,
+    });
+
+    // OBS Studio 생성
+    const obsStudio = this.obsStudioRepo.create({
+      user,
+      obsUrl: generateRandomString(20), // 고유 엔드포인트
+      auctionUrl: user.id, // 사용자 ID
+      videoLiveUrl: '', // 초기값은 빈 문자열
+    });
+
+    await this.obsStudioRepo.createObsStudio(obsStudio);
   }
 }

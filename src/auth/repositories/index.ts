@@ -6,3 +6,4 @@ export * from './refresh-token.repository';
 export * from './token-blacklist.repository';
 export * from './address.repository';
 export * from './agreement-verify.repository';
+export * from './obs-studio.repository';

@@ -38,4 +38,33 @@ export class AgreementVerifyRepository extends Repository<AgreementVerify> {
 
     return this.repo.save(agreement);
   }
+
+  /**
+   * 사용자 ID로 약관 동의 데이터 찾기
+   * @param userId 사용자 ID
+   * @returns AgreementVerify 엔티티 또는 null
+   */
+  async findByUserId(userId: string): Promise<AgreementVerify | null> {
+    return this.repo.findOne({
+      where: { user: { id: userId } },
+      relations: ['user'], // user 관계 로드
+    });
+  }
+
+  /**
+   * 약관 동의 정보 업데이트
+   * @param userId 사용자 ID
+   * @param updateDto 업데이트할 정보
+   * @returns 업데이트된 AgreementVerify 엔티티
+   */
+  async updateAgreement(
+    userId: string,
+    updateDto: Partial<AgreementVerify>,
+  ): Promise<AgreementVerify> {
+    const agreement = await this.findByUserId(userId);
+
+    Object.assign(agreement, updateDto);
+
+    return this.repo.save(agreement);
+  }
 }

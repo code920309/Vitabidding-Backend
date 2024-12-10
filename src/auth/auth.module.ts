@@ -30,13 +30,14 @@ import {
   TokenBlacklistRepository,
   AddressRepository,
   AgreementVerifyRepository,
+  ObsStudioRepository,
 } from './repositories';
 
 // 서비스 및 전략
 import { AuthService, TokenBlacklistService, UserService } from './services';
 import { MailService } from '../mail/mail.service';
 import { JwtStrategy } from './strategies';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../common/guards';
 
 // 컨트롤러
 import { AuthController } from './controllers';
@@ -88,6 +89,7 @@ import { NaverModule } from '../naver/naver.module';
     TokenBlacklistRepository,
     AddressRepository,
     AgreementVerifyRepository,
+    ObsStudioRepository,
 
     JwtAuthGuard,
   ],
@@ -106,6 +108,7 @@ import { NaverModule } from '../naver/naver.module';
     TokenBlacklistRepository,
     AddressRepository,
     AgreementVerifyRepository,
+    ObsStudioRepository,
 
     JwtAuthGuard,
   ],

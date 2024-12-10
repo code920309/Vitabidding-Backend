@@ -16,7 +16,8 @@ import {
 
 // 서비스 및 DTO
 import { AuthService, UserService } from '../services';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards';
+import { Token } from '../../common/decorators';
 import {
   CreateUserDto1,
   CreateUserDto2,
@@ -26,8 +27,8 @@ import {
   RefreshReqDto,
   SignupResDto,
   UpdateUserDto,
+  ConvertToBusinessDto,
 } from '../dto';
-import { Token } from '../../common/decorators/token.decorator';
 
 // Express 타입
 import { Request, Response } from 'express';
@@ -304,5 +305,35 @@ export class AuthController {
     await this.userService.deleteUserAccount(userId);
 
     return { message: '회원 탈퇴가 완료되었습니다.' };
+  }
+
+  /**
+   * 사업자 계정으로 전환
+   * @param accessToken 액세스 토큰에서 추출된 사용자 ID
+   * @param dto 사업자 전환 DTO
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('convert-to-business')
+  async convertToBusiness(
+    @Token() accessToken: string,
+    @Body() dto: ConvertToBusinessDto,
+  ): Promise<{ message: string }> {
+    if (!accessToken) {
+      throw new HttpException(
+        '액세스 토큰이 필요합니다.',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const userId = await this.authService.getUserIdFromToken(accessToken);
+    if (!userId) {
+      throw new HttpException(
+        '유효하지 않은 요청입니다.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.userService.convertToBusiness(userId, dto);
+    return { message: '사업자 계정으로 전환되었습니다.' };
   }
 }

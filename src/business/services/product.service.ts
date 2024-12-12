@@ -21,6 +21,15 @@ export class ProductService {
     this.bucketName = this.configService.get<string>('OCI_BUCKET_NAME');
   }
 
+  /**
+   * 새로운 상품을 생성하는 메서드
+   * - 상품 데이터를 저장하고 업로드된 이미지를 처리합니다.
+   * - 트랜잭션 처리를 통해 데이터 일관성을 유지합니다.
+   * @param sellerId 판매자 ID
+   * @param createProductDto 상품 생성 DTO
+   * @param files 업로드된 파일 목록
+   * @returns 생성된 상품 엔티티
+   */
   @Transactional()
   async createProduct(
     sellerId: string,
@@ -31,7 +40,7 @@ export class ProductService {
     console.log('===[Service] Received DTO===', createProductDto); // DTO 확인
     console.log('===[Service] Uploaded Files===', files); // 업로드된 파일 확인
 
-    // 1. 상품 데이터 생성
+    // 1. 상품 데이터 준비 및 저장
     const productData = {
       name: createProductDto.name,
       description: createProductDto.description,
@@ -45,14 +54,12 @@ export class ProductService {
     };
 
     console.log('===[Service] Prepared Product Data===', productData);
-
     const product = this.productRepository.create(productData);
 
-    // 2. 상품 저장
+    // 2. 이미지 업로드 및 저장
     const savedProduct = await this.productRepository.save(product);
     console.log('===[Service] Saved Product===', savedProduct);
 
-    // 3. 이미지 업로드 및 저장
     const productImages = [];
     for (const file of files) {
       console.log('===[Service] Processing File===', file.originalname); // 처리 중인 파일명
@@ -66,7 +73,6 @@ export class ProductService {
       );
 
       console.log('===[Service] Uploaded Image URL===', imageUrl);
-
       productImages.push(
         this.productImagesRepository.create({
           product: savedProduct,
@@ -78,10 +84,10 @@ export class ProductService {
       );
     }
 
-    await this.productImagesRepository.save(productImages);
     console.log('===[Service] Saved Product Images===', productImages);
+    await this.productImagesRepository.save(productImages);
 
-    // 4. 저장된 상품 반환
+    // 3. 최종 상품 데이터 반환 (이미지 포함)
     // return this.productRepository.findProductWithImages(savedProduct.id);
     const finalProduct = await this.productRepository.findProductWithImages(
       savedProduct.id,
@@ -90,6 +96,14 @@ export class ProductService {
     return finalProduct;
   }
 
+  /**
+   * 기존 상품 정보를 수정하는 메서드
+   * - 기존 데이터를 검증하고 새로운 이미지로 업데이트합니다.
+   * @param sellerId 판매자 ID
+   * @param updateProductDto 상품 수정 DTO
+   * @param files 업로드된 파일 목록
+   * @returns 수정된 상품 엔티티
+   */
   @Transactional()
   async updateProduct(
     sellerId: string,
@@ -166,16 +180,19 @@ export class ProductService {
       );
     }
 
-    // 새로운 이미지 URL DB에 저장
     await this.productImagesRepository.save(newImages);
     console.log('---[DEBUG] Saved New Images to Database---');
 
-    // 5. 업데이트된 상품 반환
     return this.productRepository.findProductWithImages(updatedProduct.id);
   }
 
+  /**
+   * 특정 상품을 삭제하는 메서드
+   * - 상품과 연관된 이미지를 삭제하고 데이터베이스에서 제거합니다.
+   * @param productId 삭제할 상품 ID
+   * @param sellerId 판매자 ID
+   */
   async deleteProduct(productId: string, sellerId: string): Promise<void> {
-    // 1. 기존 상품 확인
     const existingProduct = await this.productRepository.findOne({
       where: { id: productId, seller: { id: sellerId } },
       relations: ['images'],
@@ -187,10 +204,9 @@ export class ProductService {
       );
     }
 
-    const bucketName = this.bucketName; // 환경 변수에서 버킷 이름 가져오기
+    const bucketName = this.bucketName;
     console.log('---[DEBUG] Deleting Product---', existingProduct);
 
-    // 2. 이미지 삭제
     for (const image of existingProduct.images) {
       try {
         await this.ociStorageService.deleteObject(bucketName, image.imageUrl);
@@ -203,7 +219,6 @@ export class ProductService {
       }
     }
 
-    // 3. 상품 및 연관 데이터 삭제
     try {
       await this.productRepository.remove(existingProduct);
       console.log(
@@ -220,6 +235,11 @@ export class ProductService {
     }
   }
 
+  /**
+   * 특정 상품을 ID로 조회하는 메서드
+   * @param productId 조회할 상품 ID
+   * @returns 조회된 상품 엔티티 (이미지 포함)
+   */
   async getProductById(productId: string): Promise<Product> {
     const product =
       await this.productRepository.findProductWithImages(productId);
@@ -229,10 +249,19 @@ export class ProductService {
     return product;
   }
 
+  /**
+   * 특정 판매자가 등록한 모든 상품을 조회하는 메서드
+   * @param sellerId 판매자 ID
+   * @returns 해당 판매자가 등록한 상품 목록
+   */
   async getProductsBySeller(sellerId: string): Promise<Product[]> {
     return this.productRepository.findProductsBySeller(sellerId);
   }
 
+  /**
+   * 모든 상품을 조회하는 메서드
+   * @returns 모든 상품 목록
+   */
   async getAllProducts(): Promise<Product[]> {
     return this.productRepository.findAllProducts();
   }

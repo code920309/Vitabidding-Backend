@@ -14,7 +14,7 @@ class ProductImageDto {
 
   @IsOptional()
   @IsBoolean()
-  thumbnailUrl?: boolean;
+  isThumbnail?: boolean;
 }
 
 export class CreateProductDto {

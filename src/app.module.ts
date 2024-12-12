@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
+import { MulterModule } from '@nestjs/platform-express';
 
 // 애플리케이션 컨트롤러 및 서비스
 import { AppController } from './app.controller';
@@ -16,6 +17,7 @@ import { validationSchema } from './config/validation.schema';
 import { AuthModule } from './auth/auth.module';
 import { RedisModule } from './redis/redis.module';
 import { BusinessModule } from './business/business.module';
+import { OCIModule } from './common/modules/oci.module';
 
 // 글로벌 인터셉터
 import { LoggingInterceptor } from './interceptors';
@@ -59,11 +61,21 @@ import { DataSource } from 'typeorm';
         return addTransactionalDataSource(new DataSource(options));
       },
     }),
+
+    // Multer 모듈 추가
+    MulterModule.register({
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB 제한
+      },
+    }),
+
     // 인증 모듈
     AuthModule,
     // Redis 모듈
     RedisModule,
+    // 비즈니스 로직 모듈
     BusinessModule,
+    OCIModule,
   ],
   controllers: [AppController], // 애플리케이션 컨트롤러
   providers: [

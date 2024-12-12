@@ -1,42 +1,93 @@
 // src/business/services/product.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Transactional } from 'typeorm-transactional';
+import { plainToInstance } from 'class-transformer';
 import { ProductRepository, ProductImagesRepository } from '../repositories';
 import { CreateProductDto, UpdateProductDto } from '../dto';
 import { Product } from '../entities';
+import { OCIStorageService } from '../../common/services';
+import { Readable } from 'stream';
 
 @Injectable()
 export class ProductService {
+  private readonly bucketName: string;
   constructor(
+    private readonly configService: ConfigService,
     private readonly productRepository: ProductRepository,
     private readonly productImagesRepository: ProductImagesRepository,
-  ) {}
+    private readonly ociStorageService: OCIStorageService,
+  ) {
+    this.bucketName = this.configService.get<string>('OCI_BUCKET_NAME');
+  }
 
   @Transactional()
   async createProduct(
     sellerId: string,
     createProductDto: CreateProductDto,
+    files: Array<Express.Multer.File>,
   ): Promise<Product> {
-    const { images, ...productData } = createProductDto;
+    console.log('===[Service] Received Seller ID===', sellerId); // Seller ID 확인
+    console.log('===[Service] Received DTO===', createProductDto); // DTO 확인
+    console.log('===[Service] Uploaded Files===', files); // 업로드된 파일 확인
 
-    // 1. 상품 생성
-    const product = await this.productRepository.createProduct({
-      ...productData,
+    // 1. 상품 데이터 생성
+    const productData = {
+      name: createProductDto.name,
+      description: createProductDto.description,
+      price: createProductDto.price,
+      stock: createProductDto.stock,
+      startDay: createProductDto.startDay,
+      startTime: createProductDto.startTime,
+      category: createProductDto.category,
+      status: createProductDto.status,
       seller: { id: sellerId },
-    });
+    };
 
-    // 2. 이미지 저장
-    if (images && images.length > 0) {
-      const productImages = images.map((image) => ({
-        product,
-        imageUrl: image.imageUrl,
-        isThumbnail: !!image.thumbnailUrl,
-      }));
-      await this.productImagesRepository.saveImages(productImages);
+    console.log('===[Service] Prepared Product Data===', productData);
+
+    const product = this.productRepository.create(productData);
+
+    // 2. 상품 저장
+    const savedProduct = await this.productRepository.save(product);
+    console.log('===[Service] Saved Product===', savedProduct);
+
+    // 3. 이미지 업로드 및 저장
+    const productImages = [];
+    for (const file of files) {
+      console.log('===[Service] Processing File===', file.originalname); // 처리 중인 파일명
+      const fileStream = Readable.from(file.buffer);
+      const objectName = `products/${savedProduct.id}/${file.originalname}`;
+      const imageUrl = await this.ociStorageService.uploadObject(
+        this.bucketName,
+        objectName,
+        fileStream,
+        file.mimetype,
+      );
+
+      console.log('===[Service] Uploaded Image URL===', imageUrl);
+
+      productImages.push(
+        this.productImagesRepository.create({
+          product: savedProduct,
+          imageUrl,
+          isThumbnail: createProductDto.images.some(
+            (img) => img.imageUrl === file.originalname,
+          ),
+        }),
+      );
     }
 
-    // 3. 저장된 상품 반환
-    return this.productRepository.findProductWithImages(product.id);
+    await this.productImagesRepository.save(productImages);
+    console.log('===[Service] Saved Product Images===', productImages);
+
+    // 4. 저장된 상품 반환
+    // return this.productRepository.findProductWithImages(savedProduct.id);
+    const finalProduct = await this.productRepository.findProductWithImages(
+      savedProduct.id,
+    );
+    console.log('===[Service] Final Product with Images===', finalProduct);
+    return finalProduct;
   }
 
   @Transactional()
@@ -72,7 +123,7 @@ export class ProductService {
         this.productImagesRepository.create({
           product: updatedProduct,
           imageUrl: image.imageUrl,
-          isThumbnail: !!image.thumbnailUrl,
+          isThumbnail: !!image.isThumbnail,
         }),
       );
       await this.productImagesRepository.save(newImages);

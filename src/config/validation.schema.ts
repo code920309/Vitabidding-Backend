@@ -41,4 +41,14 @@ export const validationSchema = Joi.object({
   NAVER_SECRET_KEY: Joi.string().required(),
   NAVER_SERVICE_ID: Joi.string().required(),
   NAVER_CALLER: Joi.string().required(),
+
+  // OCI
+  OCI_USER_OCID: Joi.string().required(),
+  OCI_TENANCY_OCID: Joi.string().required(),
+  OCI_FINGERPRINT: Joi.string().required(),
+  OCI_PRIVATE_KEY_PATH: Joi.string().required(),
+  OCI_REGION: Joi.string().required(),
+  OCI_BUCKET_NAME: Joi.string().required(),
+  OCI_NAMESPACE: Joi.string().required(),
+  OCI_CONFIG_FILE: Joi.string().required(),
 });

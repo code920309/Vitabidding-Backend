@@ -103,4 +103,33 @@ export class OCIStorageService {
       throw error;
     }
   }
+
+  async deleteObject(bucketName: string, imageUrl: string): Promise<void> {
+    try {
+      // 정확한 objectName 추출
+      const objectName = imageUrl.split('/o/')[1]; // 'products/<product_id>/<file_name>'만 추출
+      if (!objectName) {
+        console.warn('Invalid objectName. Skipping deletion:', imageUrl);
+        return;
+      }
+
+      console.log('---[DEBUG] Attempting to Delete Object---', objectName);
+
+      // 삭제 요청
+      await this.client.deleteObject({
+        namespaceName: this.namespace,
+        bucketName,
+        objectName,
+      });
+
+      console.log('---[DEBUG] Object Deleted Successfully---', objectName);
+    } catch (error) {
+      if (error.statusCode === 404) {
+        console.warn('Object Not Found, Skipping Deletion:', imageUrl);
+      } else {
+        console.error('Failed to Delete Object:', imageUrl, error);
+        throw error;
+      }
+    }
+  }
 }

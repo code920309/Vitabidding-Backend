@@ -49,14 +49,26 @@ export class ProductController {
 
   @Put()
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FilesInterceptor('files'))
   async updateProduct(
     @CurrentSeller() sellerId: string,
-    @Body() updateProductDto: UpdateProductDto,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body('updateProductDto') updateProductDtoRaw: string,
   ) {
+    console.log('===[Controller] Seller ID===', sellerId);
+    console.log('===[Controller] Uploaded Files===', files);
+    console.log('===[Controller] Raw DTO===', updateProductDtoRaw);
+
+    const updateProductDto: UpdateProductDto = JSON.parse(updateProductDtoRaw);
+    console.log('Parsed DTO:', updateProductDto);
+
     const updatedProduct = await this.productService.updateProduct(
       sellerId,
       updateProductDto,
+      files,
     );
+
+    console.log('===[Controller] Updated Product===', updatedProduct);
     return { message: '상품이 성공적으로 수정되었습니다.', updatedProduct };
   }
 

@@ -2,7 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Product, ProductImages } from '../entities';
+import { ProductImages } from '../entities';
 
 @Injectable()
 export class ProductImagesRepository extends Repository<ProductImages> {
@@ -13,17 +13,18 @@ export class ProductImagesRepository extends Repository<ProductImages> {
     super(repo.target, repo.manager, repo.queryRunner);
   }
 
-  async saveImages(images: Array<Partial<ProductImages>>): Promise<void> {
-    const imageEntities = this.repo.create(images);
-    await this.repo.save(imageEntities);
+  async findImagesByProductId(productId: string): Promise<ProductImages[]> {
+    return this.repo.find({
+      where: { product: { id: productId } },
+    });
   }
 
   async deleteImagesByProductId(productId: string): Promise<void> {
-    console.log('딜리트', productId);
-    if (!productId) {
-      throw new Error('Invalid product ID for deleting images.');
-    }
-
     await this.repo.delete({ product: { id: productId } });
+  }
+
+  async saveImages(images: Array<Partial<ProductImages>>): Promise<void> {
+    const imageEntities = this.repo.create(images);
+    await this.repo.save(imageEntities);
   }
 }

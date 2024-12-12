@@ -94,6 +94,7 @@ export class ProductService {
   async updateProduct(
     sellerId: string,
     updateProductDto: UpdateProductDto,
+    files: Array<Express.Multer.File>,
   ): Promise<Product> {
     const { images, productId, ...productData } = updateProductDto;
 
@@ -109,32 +110,114 @@ export class ProductService {
       );
     }
 
-    // 2. 상품 정보 업데이트
+    // 2. 기존 이미지 삭제 (DB 및 원본 파일)
+    const bucketName = this.bucketName;
+    console.log('---[DEBUG] Deleting Existing Images---');
+    for (const image of existingProduct.images) {
+      const objectName = new URL(image.imageUrl).pathname
+        .split('/')
+        .slice(3)
+        .join('/');
+      console.log('Deleting Object:', objectName);
+
+      // 클라우드 버킷에서 이미지 삭제
+      try {
+        await this.ociStorageService.deleteObject(bucketName, image.imageUrl);
+      } catch (error) {
+        console.warn(
+          'Failed to delete object. Skipping:',
+          image.imageUrl,
+          error,
+        );
+      }
+    }
+
+    // DB에서 기존 이미지 URL 삭제
+    await this.productImagesRepository.deleteImagesByProductId(productId);
+    console.log('---[DEBUG] Deleted Images from Database---');
+
+    // 3. 상품 정보 업데이트
     Object.assign(existingProduct, productData);
     const updatedProduct = await this.productRepository.save(existingProduct);
 
-    // 3. 이미지 업데이트
-    if (images && images.length > 0) {
-      // 기존 이미지 삭제
-      await this.productImagesRepository.deleteImagesByProductId(productId);
+    // 4. 새로운 이미지 업로드 및 DB 저장
+    const newImages = [];
+    for (const file of files) {
+      console.log('Processing New File:', file.originalname);
+      const fileStream = Readable.from(file.buffer);
+      const objectName = `products/${updatedProduct.id}/${file.originalname}`;
+      const imageUrl = await this.ociStorageService.uploadObject(
+        bucketName,
+        objectName,
+        fileStream,
+        file.mimetype,
+      );
 
-      // 새 이미지 추가
-      const newImages = images.map((image) =>
+      console.log('Uploaded New Image URL:', imageUrl);
+
+      newImages.push(
         this.productImagesRepository.create({
           product: updatedProduct,
-          imageUrl: image.imageUrl,
-          isThumbnail: !!image.isThumbnail,
+          imageUrl,
+          isThumbnail: images.some(
+            (img) => img.imageUrl === file.originalname && img.isThumbnail,
+          ),
         }),
       );
-      await this.productImagesRepository.save(newImages);
     }
 
-    // 4. 업데이트된 상품 반환
+    // 새로운 이미지 URL DB에 저장
+    await this.productImagesRepository.save(newImages);
+    console.log('---[DEBUG] Saved New Images to Database---');
+
+    // 5. 업데이트된 상품 반환
     return this.productRepository.findProductWithImages(updatedProduct.id);
   }
 
   async deleteProduct(productId: string, sellerId: string): Promise<void> {
-    await this.productRepository.deleteProduct(productId, sellerId);
+    // 1. 기존 상품 확인
+    const existingProduct = await this.productRepository.findOne({
+      where: { id: productId, seller: { id: sellerId } },
+      relations: ['images'],
+    });
+
+    if (!existingProduct) {
+      throw new NotFoundException(
+        '상품을 찾을 수 없거나 삭제 권한이 없습니다.',
+      );
+    }
+
+    const bucketName = this.bucketName; // 환경 변수에서 버킷 이름 가져오기
+    console.log('---[DEBUG] Deleting Product---', existingProduct);
+
+    // 2. 이미지 삭제
+    for (const image of existingProduct.images) {
+      try {
+        await this.ociStorageService.deleteObject(bucketName, image.imageUrl);
+      } catch (error) {
+        console.warn(
+          'Failed to delete image from Object Storage:',
+          image.imageUrl,
+          error,
+        );
+      }
+    }
+
+    // 3. 상품 및 연관 데이터 삭제
+    try {
+      await this.productRepository.remove(existingProduct);
+      console.log(
+        '---[DEBUG] Product and Related Data Deleted Successfully---',
+        productId,
+      );
+    } catch (error) {
+      console.error(
+        'Failed to delete product from the database:',
+        productId,
+        error,
+      );
+      throw error;
+    }
   }
 
   async getProductById(productId: string): Promise<Product> {

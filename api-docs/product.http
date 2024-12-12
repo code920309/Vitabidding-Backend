@@ -41,7 +41,7 @@ Content-Type: application/json
 # }
 
 ###
-# 상품 생성
+# 상품 생성 OCI 이미지 버킷 연결
 POST {{domain}}/business/products
 Authorization: Bearer {{accessToken}}
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
@@ -95,14 +95,56 @@ Content-Type: application/json
   "productId": "a9f9b86b-b872-4689-ac78-5fb22bb65adb"
 }
 
+# ###
+# # 상품 수정 <OCI 이미지 버킷 미연결>
+# PUT {{domain}}/business/products
+# Authorization: Bearer {{accessToken}}
+# Content-Type: application/json
+
+# {
+#   "productId": "a9f9b86b-b872-4689-ac78-5fb22bb65adb",
+#   "name": "수정된 상품명",
+#   "description": "수정된 상품 설명",
+#   "price": "20000",
+#   "stock": "30",
+#   "startDay": "2024-12-15",
+#   "startTime": "14:00",
+#   "category": "가전제품",
+#   "status": "판매완료",
+#   "images": [
+#     {
+#       "imageUrl": "https://example.com/main-image10.png",
+#       "thumbnailUrl": false
+#     },
+#     {
+#       "imageUrl": "https://example.com/main-image-100.png",
+#       "thumbnailUrl": false
+#     }
+#   ]
+# }
+
 ###
-# 상품 수정 <OCI 이미지 버킷 미연결>
+# 상품 수정 <OCI 이미지 버킷 연결>
 PUT {{domain}}/business/products
 Authorization: Bearer {{accessToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="files"; filename="image1.png"
+Content-Type: image/png
+
+< ../.oci/image1.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="files"; filename="image3.png"
+Content-Type: image/png
+
+< ../.oci/image3.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="updateProductDto"
 Content-Type: application/json
 
 {
-  "productId": "a9f9b86b-b872-4689-ac78-5fb22bb65adb",
+  "productId": "4c7f5683-0426-4613-bf2a-54cafd18fe00",
   "name": "수정된 상품명",
   "description": "수정된 상품 설명",
   "price": "20000",
@@ -111,17 +153,12 @@ Content-Type: application/json
   "startTime": "14:00",
   "category": "가전제품",
   "status": "판매완료",
-  "images": [
-    {
-      "imageUrl": "https://example.com/main-image10.png",
-      "thumbnailUrl": false
-    },
-    {
-      "imageUrl": "https://example.com/main-image-100.png",
-      "thumbnailUrl": false
-    }
-  ]
+    "images": [
+        { "imageUrl": "image1.png", "isThumbnail": true },
+        { "imageUrl": "image3.png", "isThumbnail": false }
+    ]
 }
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
 
 
 ###
@@ -131,7 +168,7 @@ Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
-  "productId": "1ca06d0d-e76d-4a15-8d8a-1e2e63c5f2d6"
+  "productId": "4c7f5683-0426-4613-bf2a-54cafd18fe00"
 }
 
 ###

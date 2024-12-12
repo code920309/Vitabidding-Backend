@@ -1,5 +1,11 @@
 // src/business/dto/create-product.dto.ts
-import { IsString, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  IsBoolean,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 class ProductImageDto {
@@ -7,8 +13,8 @@ class ProductImageDto {
   imageUrl: string;
 
   @IsOptional()
-  @IsString()
-  thumbnailUrl?: string;
+  @IsBoolean()
+  thumbnailUrl?: boolean;
 }
 
 export class CreateProductDto {

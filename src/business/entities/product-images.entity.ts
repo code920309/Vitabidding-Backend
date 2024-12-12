@@ -13,6 +13,6 @@ export class ProductImages extends BaseEntity {
   @Column()
   imageUrl: string;
 
-  @Column({ nullable: true })
-  thumbnailUrl: string | null; // 썸네일 이미지 URL
+  @Column({ default: false })
+  isThumbnail: boolean;
 }

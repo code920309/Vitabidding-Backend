@@ -7,8 +7,8 @@ import { ProductImages } from './product-images.entity';
 @Entity()
 @Index('product_sellerid_index', ['seller'])
 export class Product extends BaseEntity {
-  @ManyToOne(() => User, { onDelete: 'CASCADE' }) // 판매자 삭제 시 상품 삭제
-  seller: Relation<User>;
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  seller: Relation<User> | { id: string };
 
   @Column()
   name: string;

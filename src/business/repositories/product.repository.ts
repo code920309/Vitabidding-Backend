@@ -13,6 +13,11 @@ export class ProductRepository extends Repository<Product> {
     super(repo.target, repo.manager, repo.queryRunner);
   }
 
+  async createProduct(data: Partial<Product>): Promise<Product> {
+    const product = this.repo.create(data); // 메모리 상에서 생성
+    return this.repo.save(product); // 데이터베이스에 저장
+  }
+
   async findProductWithImages(productId: string): Promise<Product | null> {
     return this.repo.findOne({
       where: { id: productId },

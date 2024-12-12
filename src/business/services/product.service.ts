@@ -15,122 +15,71 @@ export class ProductService {
   @Transactional()
   async createProduct(
     sellerId: string,
-    dto: CreateProductDto,
+    createProductDto: CreateProductDto,
   ): Promise<Product> {
-    console.log('[createProduct] DTO:', dto);
+    const { images, ...productData } = createProductDto;
 
-    // 상품 생성 및 저장
-    const product = this.productRepository.create({
-      ...dto,
+    // 1. 상품 생성
+    const product = await this.productRepository.createProduct({
+      ...productData,
       seller: { id: sellerId },
     });
-    console.log('[createProduct] Created Product Entity:', product);
 
-    const savedProduct = await this.productRepository.save(product);
-    console.log('[createProduct] Saved Product:', savedProduct);
-
-    // 이미지 저장
-    if (dto.images && dto.images.length > 0) {
-      const uniqueImages = dto.images.filter(
-        (img, index, self) =>
-          index ===
-          self.findIndex(
-            (i) =>
-              i.imageUrl === img.imageUrl &&
-              i.thumbnailUrl === img.thumbnailUrl,
-          ),
-      );
-      console.log('[createProduct] Unique Images:', uniqueImages);
-
-      // 명시적으로 이미지 저장
-      await this.productImagesRepository.saveImages(savedProduct, uniqueImages);
-      console.log('[createProduct] Images Saved');
+    // 2. 이미지 저장
+    if (images && images.length > 0) {
+      const productImages = images.map((image) => ({
+        product,
+        imageUrl: image.imageUrl,
+        isThumbnail: !!image.thumbnailUrl,
+      }));
+      await this.productImagesRepository.saveImages(productImages);
     }
 
-    return savedProduct;
+    // 3. 저장된 상품 반환
+    return this.productRepository.findProductWithImages(product.id);
   }
 
   @Transactional()
   async updateProduct(
-    productId: string,
     sellerId: string,
-    dto: UpdateProductDto,
+    updateProductDto: UpdateProductDto,
   ): Promise<Product> {
-    console.log('[updateProduct] Fetched productId:', productId);
+    const { images, productId, ...productData } = updateProductDto;
 
-    const product =
-      await this.productRepository.findProductWithImages(productId);
+    // 1. 기존 상품 확인
+    const existingProduct = await this.productRepository.findOne({
+      where: { id: productId, seller: { id: sellerId } },
+      relations: ['images'],
+    });
 
-    console.log('[updateProduct] Fetched Product:', product);
-
-    if (!product) {
-      throw new NotFoundException('상품을 찾을 수 없습니다.');
-    }
-
-    if (!product.images) {
-      throw new Error('Product images are not loaded. Check database query.');
-    }
-
-    if (product.seller.id !== sellerId) {
-      throw new NotFoundException('권한이 없습니다.');
-    }
-
-    // 업데이트 로직
-    Object.assign(product, dto);
-
-    // 기존 이미지 처리
-    if (dto.images) {
-      const existingImages = product.images;
-      const newImages = dto.images;
-
-      const imagesToAdd = newImages.filter(
-        (newImg) =>
-          !existingImages.some(
-            (oldImg) =>
-              oldImg.imageUrl === newImg.imageUrl &&
-              oldImg.thumbnailUrl === newImg.thumbnailUrl,
-          ),
+    if (!existingProduct) {
+      throw new NotFoundException(
+        '상품을 찾을 수 없거나 수정 권한이 없습니다.',
       );
-
-      const imagesToDelete = existingImages.filter(
-        (oldImg) =>
-          !newImages.some(
-            (newImg) =>
-              newImg.imageUrl === oldImg.imageUrl &&
-              newImg.thumbnailUrl === oldImg.thumbnailUrl,
-          ),
-      );
-
-      console.log('[updateProduct] Images to Add:', imagesToAdd);
-      console.log('[updateProduct] Images to Delete:', imagesToDelete);
-
-      // 삭제 작업
-      if (imagesToDelete.length > 0) {
-        const deleteIds = imagesToDelete.map((img) => img.id);
-        console.log('[updateProduct] Image IDs to Delete:', deleteIds);
-        await this.productImagesRepository.delete(deleteIds);
-      }
-
-      // 추가 작업
-      if (imagesToAdd.length > 0) {
-        const newImageEntities = imagesToAdd.map((img) =>
-          this.productImagesRepository.create({
-            product,
-            imageUrl: img.imageUrl,
-            thumbnailUrl: img.thumbnailUrl,
-          }),
-        );
-
-        console.log('[updateProduct] Image Entities to Add:', newImageEntities);
-        await this.productImagesRepository.save(newImageEntities);
-      }
     }
 
-    const updatedProduct = await this.productRepository.save(product);
+    // 2. 상품 정보 업데이트
+    Object.assign(existingProduct, productData);
+    const updatedProduct = await this.productRepository.save(existingProduct);
 
-    console.log('[updateProduct] Updated Product:', updatedProduct);
+    // 3. 이미지 업데이트
+    if (images && images.length > 0) {
+      // 기존 이미지 삭제
+      await this.productImagesRepository.deleteImagesByProductId(productId);
 
-    return updatedProduct;
+      // 새 이미지 추가
+      const newImages = images.map((image) =>
+        this.productImagesRepository.create({
+          product: updatedProduct,
+          imageUrl: image.imageUrl,
+          isThumbnail: !!image.thumbnailUrl,
+        }),
+      );
+      await this.productImagesRepository.save(newImages);
+    }
+
+    // 4. 업데이트된 상품 반환
+    return this.productRepository.findProductWithImages(updatedProduct.id);
   }
 
   async deleteProduct(productId: string, sellerId: string): Promise<void> {

@@ -31,11 +31,11 @@ Authorization: Bearer {{accessToken}}
   "images": [
     {
       "imageUrl": "https://example.com/main-image.jpg",
-      "thumbnailUrl": "https://example.com/thumbnail-image.jpg"
+      "thumbnailUrl": false
     },
     {
       "imageUrl": "https://example.com/main-image-2.jpg",
-      "thumbnailUrl": "https://example.com/thumbnail-image-2.jpg"
+      "thumbnailUrl": false
     }
   ]
 }
@@ -52,36 +52,36 @@ Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
-  "productId": "1ca06d0d-e76d-4a15-8d8a-1e2e63c5f2d6"
+  "productId": "a9f9b86b-b872-4689-ac78-5fb22bb65adb"
 }
 
-# ### ---------------------------------- 에러 덩어리
-# # 상품 수정 <OCI 이미지 버킷 미연결>
-# PUT {{domain}}/business/products
-# Authorization: Bearer {{accessToken}}
-# Content-Type: application/json
+###
+# 상품 수정 <OCI 이미지 버킷 미연결>
+PUT {{domain}}/business/products
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
 
-# {
-#   "productId": "4c7cd599-b235-4e7b-b10c-66c771135b4f",
-#   "name": "수정된 상품명",
-#   "description": "수정된 상품 설명",
-#   "price": "20000",
-#   "stock": "30",
-#   "startDay": "2024-12-15",
-#   "startTime": "14:00",
-#   "category": "가전제품",
-#   "status": "판매완료",
-#   "images": [
-#     {
-#       "imageUrl": "https://example.com/main-image10.jpg",
-#       "thumbnailUrl": "https://example.com/thumbnail-image10.jpg"
-#     },
-#     {
-#       "imageUrl": "https://example.com/main-image-100.jpg",
-#       "thumbnailUrl": "https://example.com/thumbnail-image-100.jpg"
-#     }
-#   ]
-# }
+{
+  "productId": "a9f9b86b-b872-4689-ac78-5fb22bb65adb",
+  "name": "수정된 상품명",
+  "description": "수정된 상품 설명",
+  "price": "20000",
+  "stock": "30",
+  "startDay": "2024-12-15",
+  "startTime": "14:00",
+  "category": "가전제품",
+  "status": "판매완료",
+  "images": [
+    {
+      "imageUrl": "https://example.com/main-image10.jpg",
+      "thumbnailUrl": false
+    },
+    {
+      "imageUrl": "https://example.com/main-image-100.jpg",
+      "thumbnailUrl": false
+    }
+  ]
+}
 
 ###
 # 상품 삭제 <OCI 이미지 버킷 미연결>

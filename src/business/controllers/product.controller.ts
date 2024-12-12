@@ -21,10 +21,26 @@ export class ProductController {
   @Post()
   async createProduct(
     @CurrentSeller() sellerId: string,
-    @Body() dto: CreateProductDto,
-  ): Promise<{ message: string }> {
-    await this.productService.createProduct(sellerId, dto);
-    return { message: '상품이 성공적으로 등록되었습니다.' };
+    @Body() createProductDto: CreateProductDto,
+  ) {
+    const product = await this.productService.createProduct(
+      sellerId,
+      createProductDto,
+    );
+    return { message: '상품이 성공적으로 생성되었습니다.', product };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put()
+  async updateProduct(
+    @CurrentSeller() sellerId: string,
+    @Body() updateProductDto: UpdateProductDto,
+  ) {
+    const updatedProduct = await this.productService.updateProduct(
+      sellerId,
+      updateProductDto,
+    );
+    return { message: '상품이 성공적으로 수정되었습니다.', updatedProduct };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -36,15 +52,6 @@ export class ProductController {
   @Post('details')
   async getProduct(@Body('productId') productId: string) {
     return this.productService.getProductById(productId);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Put()
-  async updateProduct(
-    @CurrentSeller() sellerId: string,
-    @Body() dto: UpdateProductDto & { productId: string },
-  ) {
-    return this.productService.updateProduct(dto.productId, sellerId, dto);
   }
 
   @UseGuards(JwtAuthGuard)

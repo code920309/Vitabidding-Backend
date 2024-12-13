@@ -46,3 +46,8 @@ Content-Type: application/json
   "phoneNumber": "01012345678",
   "code": "853930"
 }
+
+###
+# 현재 시각
+GET {{domain}}/auth/server-time
+Content-Type: application/json

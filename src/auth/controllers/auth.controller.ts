@@ -362,4 +362,42 @@ export class AuthController {
     const status = await this.userService.getBusinessStatus(userId);
     return { businessChk: status };
   }
+
+  /**
+   * 현재 서버 시간 반환
+   * @returns 서버의 현재 시간을 ISO 8601 형식과 읽기 쉬운 형식으로 반환
+   */
+  @Get('server-time')
+  async getServerTime(): Promise<{
+    serverTime: string;
+    readableTime: string;
+    originalServerTime: string;
+  }> {
+    try {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = (now.getMonth() + 1).toString().padStart(2, '0');
+      const date = now.getDate().toString().padStart(2, '0');
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+
+      const serverTime = `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
+      const readableTime = now.toLocaleString('ko-KR', {
+        timeZone: 'Asia/Seoul',
+      });
+      const originalServerTime = now.toISOString();
+
+      return {
+        serverTime,
+        readableTime,
+        originalServerTime,
+      };
+    } catch (error) {
+      throw new HttpException(
+        '서버 시간을 조회하는 중 오류가 발생했습니다.',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

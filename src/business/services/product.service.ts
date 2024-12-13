@@ -262,7 +262,27 @@ export class ProductService {
    * 모든 상품을 조회하는 메서드
    * @returns 모든 상품 목록
    */
-  async getAllProducts(): Promise<Product[]> {
-    return this.productRepository.findAllProducts();
+  async getAllProducts(): Promise<any[]> {
+    const products = await this.productRepository.findAllProducts();
+
+    return products.map((product) => ({
+      productId: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      stock: product.stock,
+      startDay: product.startDay,
+      startTime: product.startTime,
+      category: product.category,
+      status: product.status,
+      seller: {
+        id: product.seller.id,
+        name: product.seller.name,
+      },
+      images: product.images.map((image) => ({
+        imageUrl: image.imageUrl,
+        isThumbnail: image.isThumbnail,
+      })),
+    }));
   }
 }

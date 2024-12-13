@@ -7,8 +7,8 @@ import { ProductImages } from './product-images.entity';
 @Entity()
 @Index('product_sellerid_index', ['seller'])
 export class Product extends BaseEntity {
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  seller: Relation<User> | { id: string };
+  @ManyToOne(() => User, (user) => user.id, { eager: false })
+  seller: Relation<User>; // 'Relation<User> | { id: string }'에서 'Relation<User>'로 변경
 
   @Column()
   name: string;

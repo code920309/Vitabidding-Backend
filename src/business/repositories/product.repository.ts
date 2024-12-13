@@ -54,7 +54,7 @@ export class ProductRepository extends Repository<Product> {
    */
   async findAllProducts(): Promise<Product[]> {
     return this.repo.find({
-      relations: ['images'], // 이미지 관계를 포함하여 조회
+      relations: ['images', 'seller'],
     });
   }
 
